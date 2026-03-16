@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: simple-login-app
+    name: camera rental
     env: node
     plan: free
     buildCommand: npm install
