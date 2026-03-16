@@ -35,7 +35,7 @@ router.post('/register', async (req, res) => {
 
     // Check if user exists
     const { data: existingUser } = await supabase
-      .from('users')
+      .from('admin_users')
       .select('id')
       .eq('username', username)
       .single();
@@ -47,10 +47,10 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Hash password and create user
+    // Hash password and create admin user
     const hashedPassword = await hashPassword(password);
     const { data, error } = await supabase
-      .from('users')
+      .from('admin_users')
       .insert([{ username, password: hashedPassword }])
       .select();
 
@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
 
     // Find user
     const { data: user, error: findError } = await supabase
-      .from('users')
+      .from('admin_users')
       .select('*')
       .eq('username', username)
       .single();
@@ -137,7 +137,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const { data: user, error } = await supabase
-      .from('users')
+      .from('admin_users')
       .select('id, username, created_at')
       .eq('id', req.user.userId)
       .single();

@@ -3,103 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录系统</title>
-    <link rel="stylesheet" href="style.css">
+    <title>相机租赁系统</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="form-container">
-            <div class="logo">🔐</div>
-            <h1>登录系统</h1>
-            
-            <!-- 选项卡 -->
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="login">登录</button>
-                <button class="tab-btn" data-tab="register">注册</button>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">📷 相机租赁系统</h1>
+            <div class="nav-menu">
+                <button id="customerTabBtn" class="nav-btn active" onclick="switchTab('customer')">客户租赁</button>
+                <button id="adminTabBtn" class="nav-btn" onclick="switchTab('admin')">管理员</button>
+                <button id="logoutBtn" class="nav-btn" style="display:none;">退出登录</button>
             </div>
-
-            <!-- 登录表单 -->
-            <form id="loginForm" class="form active">
-                <div class="form-group">
-                    <label for="loginUsername">用户名</label>
-                    <input 
-                        type="text" 
-                        id="loginUsername" 
-                        name="username" 
-                        placeholder="输入用户名" 
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="loginPassword">密码</label>
-                    <input 
-                        type="password" 
-                        id="loginPassword" 
-                        name="password" 
-                        placeholder="输入密码" 
-                        required
-                    >
-                </div>
-
-                <button type="submit" class="btn btn-primary">登录</button>
-                <div id="loginError" class="error-message"></div>
-            </form>
-
-            <!-- 注册表单 -->
-            <form id="registerForm" class="form">
-                <div class="form-group">
-                    <label for="registerUsername">用户名</label>
-                    <input 
-                        type="text" 
-                        id="registerUsername" 
-                        name="username" 
-                        placeholder="输入用户名（至少3个字符）" 
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="registerPassword">密码</label>
-                    <input 
-                        type="password" 
-                        id="registerPassword" 
-                        name="password" 
-                        placeholder="输入密码（至少6个字符）" 
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="registerPassword2">确认密码</label>
-                    <input 
-                        type="password" 
-                        id="registerPassword2" 
-                        name="confirmPassword" 
-                        placeholder="再次输入密码" 
-                        required
-                    >
-                </div>
-
-                <button type="submit" class="btn btn-primary">注册</button>
-                <div id="registerError" class="error-message"></div>
-            </form>
         </div>
+    </nav>
 
-        <!-- 用户面板（登录后显示） -->
-        <div id="userPanel" class="user-panel" style="display: none;">
-            <div class="panel-header">
-                <h2>欢迎！</h2>
-                <button id="logoutBtn" class="btn btn-secondary">登出</button>
+    <!-- 客户页面 -->
+    <div id="customerView" class="view">
+        <div class="container">
+            <!-- 设备列表区域 -->
+            <div class="equipment-section">
+                <h2>可租设备</h2>
+                
+                <!-- 筛选器 -->
+                <div class="filters">
+                    <select id="brandFilter" onchange="applyFilters()">
+                        <option value="">所有品牌</option>
+                    </select>
+                    <select id="categoryFilter" onchange="applyFilters()">
+                        <option value="">所有种类</option>
+                    </select>
+                    <input type="number" id="minPriceFilter" placeholder="最低日租价" onchange="applyFilters()">
+                    <input type="number" id="maxPriceFilter" placeholder="最高日租价" onchange="applyFilters()">
+                </div>
+
+                <!-- 设备列表 -->
+                <div id="equipmentList" class="equipment-grid">
+                    <p class="loading">加载中...</p>
+                </div>
             </div>
-            <div class="panel-content">
-                <p><strong>用户ID:</strong> <span id="userId"></span></p>
-                <p><strong>用户名:</strong> <span id="displayUsername"></span></p>
-                <p><strong>注册时间:</strong> <span id="createdAt"></span></p>
+
+            <!-- 租赁表单区域 -->
+            <div class="rental-section">
+                <h2>提交租赁订单</h2>
+                <form id="rentalForm" class="rental-form">
+                    <h3>客户信息</h3>
+                    <input type="text" id="customerName" placeholder="姓名 *" required>
+                    <input type="tel" id="customerPhone" placeholder="联系方式">
+                    <input type="text" id="customerNickname" placeholder="昵称">
+                    <textarea id="deliveryAddress" placeholder="收件地址 *" required></textarea>
+
+                    <h3>订单信息</h3>
+                    <div id="selectedEquipmentInfo" class="equipment-info">请先选择设备</div>
+                    <input type="date" id="rentalStartDate" required>
+                    <input type="date" id="rentalEndDate" required>
+                    <div id="totalPriceInfo" class="price-info">总租金: ¥0.00</div>
+
+                    <button type="submit" class="btn-primary">提交订单</button>
+                </form>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- 管理员页面 -->
+    <div id="adminView" class="view" style="display:none;">
+        <!-- 登录面板 -->
+        <div id="adminLoginPanel" class="admin-login">
+            <div class="login-form-container">
+                <h2>管理员登录</h2>
+                <form id="adminLoginForm">
+                    <input type="text" id="adminUsername" placeholder="用户名" required>
+                    <input type="password" id="adminPassword" placeholder="密码" required>
+                    <button type="submit" class="btn-primary">登录</button>
+                    <div id="adminLoginError" class="error-message"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 仪表盘 -->
+        <div id="adminDashboard" class="admin-dashboard" style="display:none;">
+            <div class="container">
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>客户数量</h4>
+                        <p id="stat-customers" class="stat-value">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>设备总数</h4>
+                        <p id="stat-equipment" class="stat-value">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>在库设备</h4>
+                        <p id="stat-inStock" class="stat-value">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>总交易数</h4>
+                        <p id="stat-transactions" class="stat-value">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>待处理订单</h4>
+                        <p id="stat-pending" class="stat-value">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>总收入</h4>
+                        <p id="stat-revenue" class="stat-value">¥-</p>
+                    </div>
+                </div>
+
+                <!-- 标签页 -->
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="switchAdminTab('equipment')">设备管理</button>
+                    <button class="tab-btn" onclick="switchAdminTab('customers')">客户管理</button>
+                    <button class="tab-btn" onclick="switchAdminTab('transactions')">交易管理</button>
+                </div>
+
+                <!-- 设备管理标签页 -->
+                <div id="equipmentTab" class="admin-tab-content">
+                    <h3>设备列表</h3>
+                    <button class="btn-primary" onclick="showAddEquipmentForm()">+ 添加设备</button>
+                    <div id="equipmentTableContainer" class="table-container">
+                        <table id="equipmentTable">
+                            <thead>
+                                <tr>
+                                    <th>设备码</th>
+                                    <th>品牌</th>
+                                    <th>种类</th>
+                                    <th>型号</th>
+                                    <th>日租金</th>
+                                    <th>赔损价格</th>
+                                    <th>库存</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <!-- 添加设备表单 -->
+                    <div id="addEquipmentForm" class="form-modal" style="display:none;">
+                        <form id="equipmentFormSubmit" class="equipment-form">
+                            <h3>添加新设备</h3>
+                            <input type="text" placeholder="设备码 *" id="equipCode" required>
+                            <input type="text" placeholder="品牌 *" id="equipBrand" required>
+                            <input type="text" placeholder="种类 *" id="equipCategory" required>
+                            <input type="text" placeholder="型号 *" id="equipModel" required>
+                            <input type="number" step="0.01" placeholder="日租金 *" id="equipDailyPrice" required>
+                            <input type="number" step="0.01" placeholder="赔损价格 *" id="equipDamagePrice" required>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">保存</button>
+                                <button type="button" class="btn-secondary" onclick="closeAddEquipmentForm()">取消</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 客户管理标签页 -->
+                <div id="customersTab" class="admin-tab-content" style="display:none;">
+                    <h3>客户列表</h3>
+                    <div id="customersTableContainer" class="table-container">
+                        <table id="customersTable">
+                            <thead>
+                                <tr>
+                                    <th>客户名</th>
+                                    <th>联系方式</th>
+                                    <th>昵称</th>
+                                    <th>收件地址</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 交易管理标签页 -->
+                <div id="transactionsTab" class="admin-tab-content" style="display:none;">
+                    <h3>交易列表</h3>
+                    <div id="transactionsTableContainer" class="table-container">
+                        <table id="transactionsTable">
+                            <thead>
+                                <tr>
+                                    <th>交易码</th>
+                                    <th>客户</th>
+                                    <th>设备</th>
+                                    <th>租期</th>
+                                    <th>总价格</th>
+                                    <th>状态</th>
+                                    <th>负责人</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功提示模态框 -->
+    <div id="successModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h2>✓ 订单提交成功</h2>
+            <p class="transaction-code">您的交易码: <strong id="transactionCodeDisplay"></strong></p>
+            <p>请妥善保管此码，员工可通过此码与您对接。</p>
+            <button class="btn-primary" onclick="closeModal()">关闭</button>
+        </div>
+    </div>
+
+    <script src="/script.js"></script>
 </body>
 </html>

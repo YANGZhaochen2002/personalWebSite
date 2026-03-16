@@ -5,15 +5,8 @@ const path = require('path');
 
 // Import routes
 const authRoutes = require('./routes/auth');
-
-// Check required environment variables
-const requiredEnvVars = ['JWT_SECRET', 'SUPABASE_URL', 'SUPABASE_KEY'];
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-if (missingVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingVars.join(', '));
-  process.exit(1);
-}
+const customerRoutes = require('./routes/customer');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -30,6 +23,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/customer', customerRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
