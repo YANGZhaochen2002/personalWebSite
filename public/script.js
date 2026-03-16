@@ -5,12 +5,14 @@ let selectedEquipment = null;
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
-    loadEquipment();
-    loadFilters();
-
-    // 如果已登录管理员，显示管理员界面
+    // 如果已登录管理员，直接进入管理员界面
     if (adminToken) {
-        showAdminDashboard();
+        switchTab('admin');
+        loadAdminData();
+        switchAdminTab('equipment');
+    } else {
+        loadEquipment();
+        loadFilters();
     }
 
     // 表单提交
@@ -332,9 +334,11 @@ function toggleAdminAuth(mode) {
  * 显示管理员仪表板
  */
 function showAdminDashboard() {
+    switchTab('admin');
     document.getElementById('adminLoginPanel').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'block';
     document.getElementById('logoutBtn').style.display = 'inline-block';
+    loadAdminData();
 }
 
 /**
@@ -362,8 +366,10 @@ async function loadAdminData() {
         console.error('Load stats error:', err);
     }
 
-    // 加载设备列表
+    // 加载所有数据
     loadAdminEquipment();
+    loadAdminCustomers();
+    loadAdminTransactions();
 }
 
 /**
@@ -521,29 +527,43 @@ async function deleteEquipment(equipmentId) {
 /**
  * 加载客户信息
  */
+/**
+ * 加载客户信息
+ */
 async function loadAdminCustomers() {
     try {
+        if (!adminToken) return;
+        
         const response = await fetch(`${API_BASE}/admin/customers`, {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
 
         const data = await response.json();
-        if (data.success) {
-            const tbody = document.querySelector('#customersTable tbody');
-            tbody.innerHTML = data.data.map(customer => `
-                <tr>
-                    <td>${customer.name}</td>
-                    <td>${customer.contact_phone || '-'}</td>
-                    <td>${customer.nickname || '-'}</td>
-                    <td>${customer.delivery_address}</td>
-                    <td>
-                        <button class="btn-edit" onclick="viewCustomerDetails(${customer.id})">查看</button>
-                    </td>
-                </tr>
-            `).join('');
+        const tbody = document.querySelector('#customersTable tbody');
+        
+        if (data.success && data.data) {
+            if (data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #999;">暂无客户数据</td></tr>';
+            } else {
+                tbody.innerHTML = data.data.map(customer => `
+                    <tr>
+                        <td>${customer.name}</td>
+                        <td>${customer.contact_phone || '-'}</td>
+                        <td>${customer.nickname || '-'}</td>
+                        <td>${customer.delivery_address}</td>
+                        <td>
+                            <button class="btn-edit" onclick="viewCustomerDetails(${customer.id})">查看</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: red;">加载失败</td></tr>';
         }
     } catch (err) {
         console.error('Load customers error:', err);
+        const tbody = document.querySelector('#customersTable tbody');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: red;">加载出错</td></tr>';
     }
 }
 
@@ -552,30 +572,41 @@ async function loadAdminCustomers() {
  */
 async function loadAdminTransactions() {
     try {
+        if (!adminToken) return;
+        
         const response = await fetch(`${API_BASE}/admin/transactions`, {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
 
         const data = await response.json();
-        if (data.success) {
-            const tbody = document.querySelector('#transactionsTable tbody');
-            tbody.innerHTML = data.data.map(trans => `
-                <tr>
-                    <td>${trans.transaction_code}</td>
-                    <td>${trans.customers.name}</td>
-                    <td>${trans.equipment.model}</td>
-                    <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
-                    <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
-                    <td>${trans.status}</td>
-                    <td>${trans.responsible_person || '-'}</td>
-                    <td>
-                        <button class="btn-edit" onclick="editTransaction(${trans.id})">编辑</button>
-                    </td>
-                </tr>
-            `).join('');
+        const tbody = document.querySelector('#transactionsTable tbody');
+        
+        if (data.success && data.data) {
+            if (data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: #999;">暂无交易数据</td></tr>';
+            } else {
+                tbody.innerHTML = data.data.map(trans => `
+                    <tr>
+                        <td><strong>${trans.transaction_code}</strong></td>
+                        <td>${trans.customers?.name || '-'}</td>
+                        <td>${trans.equipment?.model || '-'}</td>
+                        <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
+                        <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
+                        <td>${trans.status}</td>
+                        <td>${trans.responsible_person || '-'}</td>
+                        <td>
+                            <button class="btn-edit" onclick="editTransaction(${trans.id})">编辑</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: red;">加载失败</td></tr>';
         }
     } catch (err) {
         console.error('Load transactions error:', err);
+        const tbody = document.querySelector('#transactionsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: red;">加载出错</td></tr>';
     }
 }
 
@@ -588,10 +619,16 @@ document.addEventListener('DOMContentLoaded', () => {
         logoutBtn.addEventListener('click', () => {
             adminToken = null;
             localStorage.removeItem('adminToken');
+            
+            // 切换回客户界面
+            switchTab('customer');
+            
+            // 重置管理员界面
             document.getElementById('adminLoginPanel').style.display = 'flex';
             document.getElementById('adminDashboard').style.display = 'none';
             document.getElementById('logoutBtn').style.display = 'none';
             document.getElementById('adminLoginForm').reset();
+            document.getElementById('adminRegisterForm').reset();
             document.getElementById('adminUsername').value = '';
             document.getElementById('adminPassword').value = '';
         });
