@@ -115,19 +115,33 @@ async function loadFilters() {
     try {
         const response = await fetch(`${API_BASE}/customer/equipment/filters`);
         const data = await response.json();
+        console.log('Filters API response:', data);
 
         if (data.success) {
+            console.log('Categories:', data.categories);
             // 填充种类
             const categorySelect = document.getElementById('categoryFilter');
-            data.categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
-                categorySelect.appendChild(option);
-            });
+            if (!categorySelect) {
+                console.error('categoryFilter element not found');
+                return;
+            }
+            
+            if (data.categories && data.categories.length > 0) {
+                data.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    categorySelect.appendChild(option);
+                    console.log('Added category option:', category);
+                });
+            } else {
+                console.warn('No categories found in response');
+            }
             
             // 添加category变化事件监听，动态更新品牌
             categorySelect.addEventListener('change', updateBrandFilter);
+        } else {
+            console.error('Filters API returned success: false', data);
         }
     } catch (err) {
         console.error('Load filters error:', err);
