@@ -1,0 +1,24 @@
+{
+  "name": "simple-login-app",
+  "version": "1.0.0",
+  "description": "Simple login application with Supabase",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "keywords": ["auth", "login", "supabase"],
+  "author": "Brown",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
