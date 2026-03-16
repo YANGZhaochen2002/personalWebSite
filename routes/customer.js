@@ -56,28 +56,41 @@ router.get('/equipment', async (req, res) => {
  */
 router.get('/equipment/filters', async (req, res) => {
   try {
-    const { data: brands } = await supabase
+    // Fetch all equipment in stock
+    const { data: equipment, error } = await supabase
       .from('equipment')
-      .select('brand')
-      .eq('in_stock', true)
-      .distinct();
+      .select('brand, category, model')
+      .eq('in_stock', true);
 
-    const { data: categories } = await supabase
-      .from('equipment')
-      .select('category')
-      .eq('in_stock', true)
-      .distinct();
+    if (error) throw error;
+
+    // Extract unique values using Set
+    const brands = [...new Set(equipment?.map(e => e.brand).filter(Boolean) || [])];
+    const categories = [...new Set(equipment?.map(e => e.category).filter(Boolean) || [])];
+    
+    // Extract locations from model field (format: "equipment-location")
+    const locations = [...new Set(
+      equipment?.map(e => {
+        if (e.model && e.model.includes('-')) {
+          const parts = e.model.split('-');
+          return parts[parts.length - 1]; // Get the last part after the last dash
+        }
+        return null;
+      }).filter(Boolean) || []
+    )];
 
     res.json({
       success: true,
-      brands: [...new Set(brands?.map(b => b.brand) || [])],
-      categories: [...new Set(categories?.map(c => c.category) || [])]
+      brands: brands.sort(),
+      categories: categories.sort(),
+      locations: locations.sort()
     });
   } catch (err) {
     console.error('Get filters error:', err);
     res.status(500).json({
       success: false,
-      message: 'Failed to get filters'
+      message: 'Failed to get filters',
+      error: err.message
     });
   }
 });
