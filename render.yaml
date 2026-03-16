@@ -10,9 +10,3 @@ services:
         value: production
       - key: PORT
         value: 3000
-      - key: SUPABASE_URL
-        scope: build
-      - key: SUPABASE_KEY
-        scope: build
-      - key: CORS_ORIGIN
-        scope: build
