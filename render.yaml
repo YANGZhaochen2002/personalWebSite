@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: simple-login-app
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node app.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: SUPABASE_URL
+        scope: build
+      - key: SUPABASE_KEY
+        scope: build
+      - key: CORS_ORIGIN
+        scope: build
