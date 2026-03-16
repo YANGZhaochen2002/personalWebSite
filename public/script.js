@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 表单提交
     document.getElementById('rentalForm').addEventListener('submit', handleRentalSubmit);
     document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
+    document.getElementById('adminRegisterForm').addEventListener('submit', handleAdminRegister);
     document.getElementById('equipmentFormSubmit').addEventListener('submit', handleAddEquipment);
 
     // 日期变化事件
@@ -258,6 +259,72 @@ async function handleAdminLogin(e) {
     } catch (err) {
         console.error('Admin login error:', err);
         showError('adminLoginError', '登录出错');
+    }
+}
+
+/**
+ * 管理员注册
+ */
+async function handleAdminRegister(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('registerUsername').value;
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('registerConfirmPassword').value;
+
+    // 验证
+    if (password !== confirmPassword) {
+        showError('adminRegisterError', '两次输入的密码不一致');
+        return;
+    }
+
+    if (password.length < 6) {
+        showError('adminRegisterError', '密码至少需要6个字符');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('注册成功！请使用新账户登录');
+            // 切换到登录表单
+            toggleAdminAuth('login');
+            // 清空注册表单
+            document.getElementById('adminRegisterForm').reset();
+            // 自动填充用户名
+            document.getElementById('adminUsername').value = username;
+        } else {
+            showError('adminRegisterError', data.message || '注册失败');
+        }
+    } catch (err) {
+        console.error('Admin register error:', err);
+        showError('adminRegisterError', '注册出错，请重试');
+    }
+}
+
+/**
+ * 切换登录/注册表单
+ */
+function toggleAdminAuth(mode) {
+    const forms = document.querySelectorAll('.auth-form');
+    const toggleBtns = document.querySelectorAll('.toggle-btn');
+
+    forms.forEach(form => form.classList.remove('active'));
+    toggleBtns.forEach(btn => btn.classList.remove('active'));
+
+    if (mode === 'login') {
+        document.getElementById('adminLoginForm').classList.add('active');
+        toggleBtns[0].classList.add('active');
+    } else if (mode === 'register') {
+        document.getElementById('adminRegisterForm').classList.add('active');
+        toggleBtns[1].classList.add('active');
     }
 }
 
