@@ -389,16 +389,6 @@ router.get('/dashboard/stats', async (req, res) => {
       .select('id', { count: 'exact' })
       .eq('status', 'pending');
 
-    // 计算总收入
-    const { data: revenue } = await supabase
-      .from('transactions')
-      .select('total_price')
-      .eq('status', 'completed');
-
-    let totalRevenue = 0;
-    if (revenue) {
-      totalRevenue = revenue.reduce((sum, t) => sum + parseFloat(t.total_price || 0), 0);
-    }
 
     res.json({
       success: true,

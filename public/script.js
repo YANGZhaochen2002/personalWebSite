@@ -509,7 +509,6 @@ async function loadAdminData() {
             document.getElementById('stat-inStock').textContent = data.stats.inStock;
             document.getElementById('stat-transactions').textContent = data.stats.transactions;
             document.getElementById('stat-pending').textContent = data.stats.pendingTransactions;
-            document.getElementById('stat-revenue').textContent = `¥${data.stats.totalRevenue}`;
         }
     } catch (err) {
         console.error('Load stats error:', err);
