@@ -86,7 +86,7 @@ function getLocationFromModel(model) {
 }
 
 /**
- * 显示设备列表
+ * 显示设备列表（按型号分组）
  */
 function displayEquipment(equipment) {
     const container = document.getElementById('equipmentList');
@@ -96,11 +96,27 @@ function displayEquipment(equipment) {
         return;
     }
 
-    container.innerHTML = equipment.map(item => `
-        <div class="equipment-card ${selectedEquipment?.id === item.id ? 'selected' : ''}" onclick="selectEquipment(${item.id}, '${item.model}', ${item.daily_rental_price})">
+    // 按型号分组
+    const groupedByModel = {};
+    equipment.forEach(item => {
+        if (!groupedByModel[item.model]) {
+            groupedByModel[item.model] = {
+                ...item,
+                count: 0,
+                ids: []
+            };
+        }
+        groupedByModel[item.model].count++;
+        groupedByModel[item.model].ids.push(item.id);
+    });
+
+    // 转换成数组并显示
+    const uniqueModels = Object.values(groupedByModel);
+    container.innerHTML = uniqueModels.map(item => `
+        <div class="equipment-card ${selectedEquipment?.model === item.model ? 'selected' : ''}" onclick="selectEquipment(${item.ids[0]}, '${item.model}', ${item.daily_rental_price})">
             <h4>${item.brand} - ${item.model}</h4>
             <p><strong>种类:</strong> ${item.category}</p>
-            <p><strong>设备码:</strong> ${item.equipment_code}</p>
+            <p><strong>库存数量:</strong> ${item.count}</p>
             <p><strong>赔损价格:</strong> ¥${item.damage_price.toFixed(2)}</p>
             <div class="price">日租金: ¥${item.daily_rental_price.toFixed(2)}</div>
             <button class="btn-select" type="button">选择租赁</button>
