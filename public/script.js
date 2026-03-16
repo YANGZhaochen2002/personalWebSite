@@ -8,9 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 如果已登录管理员，直接进入管理员界面
     if (adminToken) {
         switchTab('admin');
-        loadAdminData();
-        switchAdminTab('equipment');
+        showAdminDashboard();
     } else {
+        // 加载客户端数据
         loadEquipment();
         loadFilters();
     }
@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 表单提交
     document.getElementById('rentalForm').addEventListener('submit', handleRentalSubmit);
     document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
-    document.getElementById('adminRegisterForm').addEventListener('submit', handleAdminRegister);
     document.getElementById('equipmentFormSubmit').addEventListener('submit', handleAddEquipment);
 
     // 日期变化事件
@@ -254,7 +253,6 @@ async function handleAdminLogin(e) {
             adminToken = data.token;
             localStorage.setItem('adminToken', adminToken);
             showAdminDashboard();
-            loadAdminData();
         } else {
             showError('adminLoginError', data.message || '登录失败');
         }
@@ -264,71 +262,6 @@ async function handleAdminLogin(e) {
     }
 }
 
-/**
- * 管理员注册
- */
-async function handleAdminRegister(e) {
-    e.preventDefault();
-
-    const username = document.getElementById('registerUsername').value;
-    const password = document.getElementById('registerPassword').value;
-    const confirmPassword = document.getElementById('registerConfirmPassword').value;
-
-    // 验证
-    if (password !== confirmPassword) {
-        showError('adminRegisterError', '两次输入的密码不一致');
-        return;
-    }
-
-    if (password.length < 6) {
-        showError('adminRegisterError', '密码至少需要6个字符');
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_BASE}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            alert('注册成功！请使用新账户登录');
-            // 切换到登录表单
-            toggleAdminAuth('login');
-            // 清空注册表单
-            document.getElementById('adminRegisterForm').reset();
-            // 自动填充用户名
-            document.getElementById('adminUsername').value = username;
-        } else {
-            showError('adminRegisterError', data.message || '注册失败');
-        }
-    } catch (err) {
-        console.error('Admin register error:', err);
-        showError('adminRegisterError', '注册出错，请重试');
-    }
-}
-
-/**
- * 切换登录/注册表单
- */
-function toggleAdminAuth(mode) {
-    const forms = document.querySelectorAll('.auth-form');
-    const toggleBtns = document.querySelectorAll('.toggle-btn');
-
-    forms.forEach(form => form.classList.remove('active'));
-    toggleBtns.forEach(btn => btn.classList.remove('active'));
-
-    if (mode === 'login') {
-        document.getElementById('adminLoginForm').classList.add('active');
-        toggleBtns[0].classList.add('active');
-    } else if (mode === 'register') {
-        document.getElementById('adminRegisterForm').classList.add('active');
-        toggleBtns[1].classList.add('active');
-    }
-}
 
 /**
  * 显示管理员仪表板
@@ -339,6 +272,8 @@ function showAdminDashboard() {
     document.getElementById('adminDashboard').style.display = 'block';
     document.getElementById('logoutBtn').style.display = 'inline-block';
     loadAdminData();
+    // 延迟调用以确保DOM已更新
+    setTimeout(() => switchAdminTab('equipment'), 100);
 }
 
 /**
@@ -366,10 +301,7 @@ async function loadAdminData() {
         console.error('Load stats error:', err);
     }
 
-    // 加载所有数据
-    loadAdminEquipment();
-    loadAdminCustomers();
-    loadAdminTransactions();
+    // 表格数据由switchAdminTab在切换时加载
 }
 
 /**
@@ -397,8 +329,10 @@ function switchAdminTab(tab) {
         tabBtn.classList.add('active');
     }
 
-    if (tab === 'customers') loadAdminCustomers();
-    if (tab === 'transactions') loadAdminTransactions();
+    // 根据标签页加载对应数据
+    if (tab === 'equipment') loadAdminEquipment();
+    else if (tab === 'customers') loadAdminCustomers();
+    else if (tab === 'transactions') loadAdminTransactions();
 }
 
 /**
@@ -628,7 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('adminDashboard').style.display = 'none';
             document.getElementById('logoutBtn').style.display = 'none';
             document.getElementById('adminLoginForm').reset();
-            document.getElementById('adminRegisterForm').reset();
             document.getElementById('adminUsername').value = '';
             document.getElementById('adminPassword').value = '';
         });
