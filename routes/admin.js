@@ -390,6 +390,8 @@ router.get('/dashboard/stats', async (req, res) => {
       .eq('status', 'pending');
 
 
+
+
     res.json({
       success: true,
       stats: {
@@ -397,8 +399,7 @@ router.get('/dashboard/stats', async (req, res) => {
         equipment: equipmentCount || 0,
         inStock: inStockCount || 0,
         transactions: transactionCount || 0,
-        pendingTransactions: pendingCount || 0,
-        totalRevenue: totalRevenue.toFixed(2)
+        pendingTransactions: pendingCount || 0
       }
     });
   } catch (err) {
