@@ -461,27 +461,131 @@ table tr:hover {
     padding: 40px;
 }
 
-/* 响应式设计 */
+/* 购物车样式 */
+.cart-section {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    border: 2px solid #e9ecef;
+}
+
+.cart-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.cart-item {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    display: grid;
+    grid-template-columns: 1fr 2fr auto;
+    gap: 15px;
+    align-items: start;
+}
+
+.cart-item-info h4 {
+    color: #667eea;
+    margin-bottom: 8px;
+}
+
+.cart-item-info p {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.cart-item-dates {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    align-items: start;
+}
+
+.date-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.date-group label {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.date-group input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.item-subtotal {
+    font-size: 0.95rem;
+    color: #764ba2;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+.btn-remove {
+    padding: 8px 15px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    transition: background 0.3s;
+}
+
+.btn-remove:hover {
+    background: #c82333;
+}
+
+.empty-cart {
+    text-align: center;
+    color: #999;
+    padding: 30px 20px;
+    background: white;
+    border-radius: 8px;
+}
+
+.checkout-section {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+}
+
+.order-summary {
+    background: white;
+    padding: 15px;
+    border-left: 4px solid #764ba2;
+    border-radius: 5px;
+    margin: 20px 0;
+}
+
+.btn-large {
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* 响应式购物车 */
 @media (max-width: 768px) {
-    .equipment-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    .cart-item {
+        grid-template-columns: 1fr;
     }
 
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .cart-item-dates {
+        grid-template-columns: 1fr;
     }
 
-    .nav-container {
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    table {
-        font-size: 0.85rem;
-    }
-
-    table th,
-    table td {
-        padding: 10px;
+    .btn-remove {
+        width: 100%;
     }
 }

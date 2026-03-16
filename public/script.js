@@ -1,7 +1,7 @@
 const API_BASE = '/api';
 let adminToken = localStorage.getItem('adminToken');
 let currentTab = 'customer';
-let selectedEquipment = null;
+let cart = []; // 购物车：存储选中的设备
 
 // 品牌和种类的映射关系
 const categoryBrandMap = {
@@ -24,16 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // 加载客户端数据
         loadEquipment();
         loadFilters();
+        displayCart(); // 初始化购物车显示
     }
 
     // 表单提交
     document.getElementById('rentalForm').addEventListener('submit', handleRentalSubmit);
     document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
     document.getElementById('equipmentFormSubmit').addEventListener('submit', handleAddEquipment);
-
-    // 日期变化事件
-    document.getElementById('rentalStartDate').addEventListener('change', updateTotalPrice);
-    document.getElementById('rentalEndDate').addEventListener('change', updateTotalPrice);
 });
 
 // ==================== 客户功能 ====================
@@ -113,13 +110,13 @@ function displayEquipment(equipment) {
     // 转换成数组并显示
     const uniqueModels = Object.values(groupedByModel);
     container.innerHTML = uniqueModels.map(item => `
-        <div class="equipment-card ${selectedEquipment?.model === item.model ? 'selected' : ''}" onclick="selectEquipment(${item.ids[0]}, '${item.model}', ${item.daily_rental_price})">
+        <div class="equipment-card">
             <h4>${item.brand} - ${item.model}</h4>
             <p><strong>种类:</strong> ${item.category}</p>
             <p><strong>库存数量:</strong> ${item.count}</p>
             <p><strong>赔损价格:</strong> ¥${item.damage_price.toFixed(2)}</p>
             <div class="price">日租金: ¥${item.daily_rental_price.toFixed(2)}</div>
-            <button class="btn-select" type="button">选择租赁</button>
+            <button class="btn-select" type="button" onclick="addToCart(${item.ids[0]}, '${item.model}', '${item.brand}', ${item.daily_rental_price}, '${item.category}')">加入购物车</button>
         </div>
     `).join('');
 }
@@ -196,91 +193,209 @@ function applyFilters() {
 }
 
 /**
- * 选择设备
+ * 添加设备到购物车
  */
-function selectEquipment(id, model, dailyPrice) {
-    selectedEquipment = { id, model, dailyPrice };
+function addToCart(id, model, brand, dailyPrice, category) {
+    // 检查是否已在购物车中
+    const existingItem = cart.find(item => item.model === model);
+    if (existingItem) {
+        alert('此设备已在购物车中');
+        return;
+    }
     
-    // 更新显示
-    document.getElementById('selectedEquipmentInfo').innerHTML = `
-        <div style="background: white; padding: 15px; border-left: 4px solid #667eea; border-radius: 5px;">
-            <p><strong>已选择设备：</strong> ${model}</p>
-            <p><strong>日租金：</strong> ¥${dailyPrice.toFixed(2)}</p>
+    // 生成唯一的购物车项ID（用于前端引用）
+    const cartItemId = `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // 添加到购物车
+    cart.push({
+        cartItemId,
+        id,
+        model,
+        brand,
+        dailyPrice,
+        category,
+        startDate: '',
+        endDate: ''
+    });
+    
+    // 显示购物车
+    displayCart();
+}
+
+/**
+ * 从购物车移除设备
+ */
+function removeFromCart(cartItemId) {
+    cart = cart.filter(item => item.cartItemId !== cartItemId);
+    displayCart();
+}
+
+/**
+ * 显示购物车
+ */
+function displayCart() {
+    const cartContainer = document.getElementById('cartItems');
+    
+    if (cart.length === 0) {
+        cartContainer.innerHTML = '<p class="empty-cart">购物车为空，请先添加设备</p>';
+        document.getElementById('checkoutSection').style.display = 'none';
+        return;
+    }
+    
+    document.getElementById('checkoutSection').style.display = 'block';
+    
+    cartContainer.innerHTML = cart.map((item, index) => `
+        <div class="cart-item">
+            <div class="cart-item-info">
+                <h4>${item.brand} - ${item.model}</h4>
+                <p><strong>种类:</strong> ${item.category}</p>
+                <p><strong>日租金:</strong> ¥${item.dailyPrice.toFixed(2)}</p>
+            </div>
+            <div class="cart-item-dates">
+                <div class="date-group">
+                    <label>租期开始</label>
+                    <input type="date" value="${item.startDate}" onchange="updateCartItemDate('${item.cartItemId}', 'startDate', this.value)">
+                </div>
+                <div class="date-group">
+                    <label>租期结束</label>
+                    <input type="date" value="${item.endDate}" onchange="updateCartItemDate('${item.cartItemId}', 'endDate', this.value)">
+                </div>
+                <div class="item-subtotal">
+                    <p id="subtotal-${item.cartItemId}">小计: ¥0.00</p>
+                </div>
+            </div>
+            <button class="btn-remove" type="button" onclick="removeFromCart('${item.cartItemId}')">删除</button>
         </div>
-    `;
-
-    // 重新加载列表以显示选中状态
-    loadEquipment();
+    `).join('');
     
-    // 更新总价格
-    updateTotalPrice();
+    // 更新各项的小计
+    updateAllSubtotals();
 }
 
 /**
- * 更新总租金
+ * 更新购物车项目的日期
  */
-function updateTotalPrice() {
-    if (!selectedEquipment) {
-        document.getElementById('totalPriceInfo').textContent = '总租金: ¥0.00';
-        return;
+function updateCartItemDate(cartItemId, dateType, value) {
+    const item = cart.find(i => i.cartItemId === cartItemId);
+    if (item) {
+        item[dateType] = value;
+        updateAllSubtotals();
     }
-
-    const startDate = new Date(document.getElementById('rentalStartDate').value);
-    const endDate = new Date(document.getElementById('rentalEndDate').value);
-
-    if (startDate >= endDate || !document.getElementById('rentalStartDate').value) {
-        document.getElementById('totalPriceInfo').textContent = '总租金: ¥0.00';
-        return;
-    }
-
-    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-    const totalPrice = selectedEquipment.dailyPrice * days;
-    document.getElementById('totalPriceInfo').textContent = `总租金: ¥${totalPrice.toFixed(2)} (${days}天)`;
 }
 
 /**
- * 提交租赁订单
+ * 更新所有购物车项目的小计和总价
+ */
+function updateAllSubtotals() {
+    let totalPrice = 0;
+    
+    cart.forEach(item => {
+        if (item.startDate && item.endDate) {
+            const startDate = new Date(item.startDate);
+            const endDate = new Date(item.endDate);
+            const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            
+            if (days > 0) {
+                const subtotal = item.dailyPrice * days;
+                document.getElementById(`subtotal-${item.cartItemId}`).textContent = 
+                    `小计: ¥${subtotal.toFixed(2)} (${days}天)`;
+                totalPrice += subtotal;
+            } else {
+                document.getElementById(`subtotal-${item.cartItemId}`).textContent = `小计: ¥0.00 (日期错误)`;
+            }
+        } else {
+            document.getElementById(`subtotal-${item.cartItemId}`).textContent = `小计: ¥0.00`;
+        }
+    });
+    
+    // 更新总价
+    const totalPriceInfo = document.getElementById('totalPriceInfo');
+    if (totalPriceInfo) {
+        totalPriceInfo.textContent = `总租金: ¥${totalPrice.toFixed(2)}`;
+    }
+}
+
+
+/**
+ * 提交租赁订单（支持多个设备）
  */
 async function handleRentalSubmit(e) {
     e.preventDefault();
 
-    if (!selectedEquipment) {
-        alert('请先选择要租赁的设备');
+    if (cart.length === 0) {
+        alert('请先添加设备到购物车');
+        return;
+    }
+    
+    // 检查所有项目是否都有有效的租期
+    for (let item of cart) {
+        if (!item.startDate || !item.endDate) {
+            alert(`请为 ${item.model} 设置租期`);
+            return;
+        }
+        const startDate = new Date(item.startDate);
+        const endDate = new Date(item.endDate);
+        if (startDate >= endDate) {
+            alert(`${item.model} 的租期无效（结束日期必须晚于开始日期）`);
+            return;
+        }
+    }
+
+    const customerName = document.getElementById('customerName').value;
+    const customerPhone = document.getElementById('customerPhone').value || null;
+    const customerNickname = document.getElementById('customerNickname').value || null;
+    const deliveryAddress = document.getElementById('deliveryAddress').value;
+
+    if (!customerName || !deliveryAddress) {
+        alert('请填写姓名和收件地址');
         return;
     }
 
-    const rentalData = {
-        name: document.getElementById('customerName').value,
-        contactPhone: document.getElementById('customerPhone').value || null,
-        nickname: document.getElementById('customerNickname').value || null,
-        deliveryAddress: document.getElementById('deliveryAddress').value,
-        equipmentId: selectedEquipment.id,
-        rentalStartDate: document.getElementById('rentalStartDate').value,
-        rentalEndDate: document.getElementById('rentalEndDate').value
-    };
+    // 准备所有租赁请求
+    const rentalRequests = cart.map(item => ({
+        name: customerName,
+        contactPhone: customerPhone,
+        nickname: customerNickname,
+        deliveryAddress: deliveryAddress,
+        equipmentId: item.id,
+        rentalStartDate: item.startDate,
+        rentalEndDate: item.endDate
+    }));
 
     try {
-        const response = await fetch(`${API_BASE}/customer/rental`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(rentalData)
-        });
+        // 遍历提交每个租赁
+        const results = [];
+        let successCount = 0;
+        
+        for (let rentalData of rentalRequests) {
+            const response = await fetch(`${API_BASE}/customer/rental`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rentalData)
+            });
 
-        const data = await response.json();
+            const data = await response.json();
+            
+            if (data.success) {
+                results.push(data.transactionCode);
+                successCount++;
+            } else {
+                alert(`${rentalData.equipmentId} 提交失败: ${data.message}`);
+            }
+        }
 
-        if (data.success) {
-            // 显示成功模态框
-            document.getElementById('transactionCodeDisplay').textContent = data.transactionCode;
-            document.getElementById('successModal').style.display = 'flex';
+        if (successCount > 0) {
+            // 显示成功信息
+            const codesText = results.join('\n');
+            alert(`✓ 订单提交成功！共${successCount}个设备\n\n交易码：\n${codesText}\n\n请妥善保管这些码`);
 
-            // 重置表单
+            // 重置表单和购物车
             document.getElementById('rentalForm').reset();
-            selectedEquipment = null;
-            document.getElementById('selectedEquipmentInfo').innerHTML = '请先选择设备';
-            document.getElementById('totalPriceInfo').textContent = '总租金: ¥0.00';
+            cart = [];
+            displayCart();
             loadEquipment();
         } else {
-            alert('提交失败: ' + data.message);
+            alert('所有订单提交失败，请重试');
         }
     } catch (err) {
         console.error('Submit rental error:', err);
