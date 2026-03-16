@@ -330,10 +330,10 @@ router.put('/transactions/:transactionId', async (req, res) => {
     const { transactionId } = req.params;
     const { status, responsiblePerson } = req.body;
 
-    // 首先获取交易信息以获取equipment_id
+    // 首先获取交易信息以获取equipment_id和旧状态
     const { data: transaction, error: fetchError } = await supabase
       .from('transactions')
-      .select('equipment_id')
+      .select('equipment_id, status')
       .eq('id', transactionId)
       .single();
 
@@ -344,17 +344,33 @@ router.put('/transactions/:transactionId', async (req, res) => {
       });
     }
 
-    // 只在状态不是 pending 时才修改设备库存
-    // pending 状态表示待确认，不改变设备库存
-    if (status && status !== 'pending' && transaction.equipment_id) {
-      let inStock = true; // 默认为在库
-      
-      if (['confirmed', 'rented', 'shipped'].includes(status)) {
+    // 只在非 pending 状态或改回 pending 时才修改设备库存
+    if (status && transaction.equipment_id) {
+      let shouldUpdateEquipment = false;
+      let inStock = true;
+
+      if (status === 'pending') {
+        // 改为 pending 时：检查是否还有其他活跃交易，没有则回库
+        shouldUpdateEquipment = true;
+        const { data: activeTransactions, error: activeError } = await supabase
+          .from('transactions')
+          .select('id')
+          .eq('equipment_id', transaction.equipment_id)
+          .neq('id', transactionId)
+          .in('status', ['confirmed', 'rented', 'shipped']);
+        
+        if (activeError) throw activeError;
+        
+        // 如果没有其他活跃交易，设备回库
+        inStock = !activeTransactions || activeTransactions.length === 0;
+      } else if (['confirmed', 'rented', 'shipped'].includes(status)) {
         // 这些状态表示设备正在出租，不在库
+        shouldUpdateEquipment = true;
         inStock = false;
       } else if (['returned', 'completed', 'cancelled', 'damaged'].includes(status)) {
         // 这些状态表示设备已回库或交易已取消
         // 需要检查是否还有其他活跃的交易
+        shouldUpdateEquipment = true;
         const { data: activeTransactions, error: activeError } = await supabase
           .from('transactions')
           .select('id')
@@ -368,11 +384,13 @@ router.put('/transactions/:transactionId', async (req, res) => {
         inStock = !activeTransactions || activeTransactions.length === 0;
       }
 
-      // 更新设备库存状态
-      await supabase
-        .from('equipment')
-        .update({ in_stock: inStock })
-        .eq('id', transaction.equipment_id);
+      // 如果需要更新设备库存，执行更新
+      if (shouldUpdateEquipment) {
+        await supabase
+          .from('equipment')
+          .update({ in_stock: inStock })
+          .eq('id', transaction.equipment_id);
+      }
     }
 
     // 更新交易
