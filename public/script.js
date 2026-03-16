@@ -354,7 +354,6 @@ async function loadAdminData() {
  * 切换管理员标签页
  */
 function switchAdminTab(tab) {
-    console.log('switchAdminTab called with:', tab);
     document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
 
@@ -362,7 +361,6 @@ function switchAdminTab(tab) {
     const tabElement = document.getElementById(tabId);
     if (tabElement) {
         tabElement.classList.add('active');
-        console.log('Tab element activated:', tabId);
     }
 
     // 找到对应的按钮并添加active类
@@ -378,17 +376,13 @@ function switchAdminTab(tab) {
     }
 
     // 根据标签页加载对应数据
-    console.log('Loading data for tab:', tab);
     if (tab === 'equipment') {
-        console.log('Calling loadAdminEquipment');
         loadAdminEquipment();
     }
     else if (tab === 'customers') {
-        console.log('Calling loadAdminCustomers');
         loadAdminCustomers();
     }
     else if (tab === 'transactions') {
-        console.log('Calling loadAdminTransactions');
         loadAdminTransactions();
     }
 }
@@ -531,14 +525,10 @@ async function loadAdminCustomers() {
         });
 
         const data = await response.json();
-        console.log('Customers API response:', data);
         const tbody = document.querySelector('#customersTable tbody');
-        console.log('tbody element:', tbody);
         
         if (data.success && data.data) {
-            console.log('Data exists, length:', data.data.length);
             if (data.data.length === 0) {
-                console.log('No customers, showing empty state');
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #999;">暂无客户数据</td></tr>';
             } else {
                 const html = data.data.map(customer => `
@@ -552,9 +542,7 @@ async function loadAdminCustomers() {
                         </td>
                     </tr>
                 `).join('');
-                console.log('Generated HTML:', html);
                 tbody.innerHTML = html;
-                console.log('HTML updated to tbody');
             }
         } else {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: red;">加载失败</td></tr>';
@@ -578,14 +566,10 @@ async function loadAdminTransactions() {
         });
 
         const data = await response.json();
-        console.log('Transactions API response:', data);
         const tbody = document.querySelector('#transactionsTable tbody');
-        console.log('tbody element:', tbody);
         
         if (data.success && data.data) {
-            console.log('Data exists, length:', data.data.length);
             if (data.data.length === 0) {
-                console.log('No transactions, showing empty state');
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: #999;">暂无交易数据</td></tr>';
             } else {
                 const html = data.data.map(trans => `
@@ -602,9 +586,7 @@ async function loadAdminTransactions() {
                         </td>
                     </tr>
                 `).join('');
-                console.log('Generated HTML:', html);
                 tbody.innerHTML = html;
-                console.log('HTML updated to tbody');
             }
         } else {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: red;">加载失败</td></tr>';
