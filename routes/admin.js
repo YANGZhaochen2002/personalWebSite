@@ -330,6 +330,39 @@ router.put('/transactions/:transactionId', async (req, res) => {
     const { transactionId } = req.params;
     const { status, responsiblePerson } = req.body;
 
+    // 首先获取交易信息以获取equipment_id
+    const { data: transaction, error: fetchError } = await supabase
+      .from('transactions')
+      .select('equipment_id')
+      .eq('id', transactionId)
+      .single();
+
+    if (fetchError || !transaction) {
+      return res.status(404).json({
+        success: false,
+        message: '交易不存在'
+      });
+    }
+
+    // 根据新状态更新设备库存
+    let inStock = true; // 默认为在库
+    if (status && ['rented', 'shipped', 'pending', 'confirmed'].includes(status)) {
+      // 这些状态表示设备正在出租，不在库
+      inStock = false;
+    } else if (status && ['returned', 'completed', 'cancelled', 'damaged'].includes(status)) {
+      // 这些状态表示设备已回库或交易已取消
+      inStock = true;
+    }
+
+    // 如果设备ID存在，更新设备库存状态
+    if (transaction.equipment_id) {
+      await supabase
+        .from('equipment')
+        .update({ in_stock: inStock })
+        .eq('id', transaction.equipment_id);
+    }
+
+    // 更新交易
     const { data, error } = await supabase
       .from('transactions')
       .update({

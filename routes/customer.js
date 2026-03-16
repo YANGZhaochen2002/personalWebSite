@@ -209,6 +209,12 @@ router.post('/rental', async (req, res) => {
 
     if (transactionError) throw transactionError;
 
+    // 更新设备库存状态为不在库
+    await supabase
+      .from('equipment')
+      .update({ in_stock: false })
+      .eq('id', equipmentId);
+
     res.status(201).json({
       success: true,
       message: '订单创建成功',
