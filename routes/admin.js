@@ -238,9 +238,12 @@ router.delete('/equipment/:equipmentId', async (req, res) => {
 /**
  * 获取所有交易
  */
+/**
+ * 获取所有交易（支持搜索）
+ */
 router.get('/transactions', async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, search } = req.query;
 
     let query = supabase
       .from('transactions')
@@ -254,9 +257,20 @@ router.get('/transactions', async (req, res) => {
       query = query.eq('status', status);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    let { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
+
+    // 在前端进行搜索过滤（通过客户名或交易码）
+    if (search) {
+      const searchLower = search.toLowerCase();
+      data = data.filter(transaction => {
+        return (
+          transaction.transaction_code?.toLowerCase().includes(searchLower) ||
+          transaction.customers?.name?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
 
     res.json({
       success: true,

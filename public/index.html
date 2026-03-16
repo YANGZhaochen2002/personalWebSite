@@ -197,6 +197,15 @@
                 <!-- 交易管理标签页 -->
                 <div id="transactionsTab" class="admin-tab-content">
                     <h3>交易列表</h3>
+                    
+                    <!-- 搜索框 -->
+                    <div class="search-section">
+                        <input type="text" id="transactionSearchInput" placeholder="按客户名或交易码搜索..." 
+                               onkeyup="if(event.key === 'Enter') searchTransactions()">
+                        <button class="btn-primary" onclick="searchTransactions()" style="width: auto; padding: 10px 20px;">搜索</button>
+                        <button class="btn-secondary" onclick="document.getElementById('transactionSearchInput').value = ''; loadAdminTransactions();" style="width: auto; padding: 10px 20px;">清空</button>
+                    </div>
+                    
                     <div id="transactionsTableContainer" class="table-container">
                         <table id="transactionsTable">
                             <thead>
@@ -226,6 +235,34 @@
             <p class="transaction-code">您的交易码: <strong id="transactionCodeDisplay"></strong></p>
             <p>请妥善保管此码，员工可通过此码与您对接。</p>
             <button class="btn-primary" onclick="closeModal()">关闭</button>
+        </div>
+    </div>
+
+    <!-- 编辑交易模态框 -->
+    <div id="editTransactionModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2>编辑交易</h2>
+            <form style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label for="transactionStatus" style="display: block; margin-bottom: 5px; font-weight: 600;">交易状态 *</label>
+                    <select id="transactionStatus" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        <option value="pending">待处理</option>
+                        <option value="confirmed">已确认</option>
+                        <option value="shipped">已发货</option>
+                        <option value="returned">已归还</option>
+                        <option value="completed">已完成</option>
+                        <option value="cancelled">已取消</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="transactionResponsible" style="display: block; margin-bottom: 5px; font-weight: 600;">负责人</label>
+                    <input type="text" id="transactionResponsible" placeholder="负责人姓名" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn-primary" onclick="saveTransactionChanges()" style="flex: 1;">保存</button>
+                    <button type="button" class="btn-secondary" onclick="closeEditTransactionModal()" style="flex: 1;">取消</button>
+                </div>
+            </form>
         </div>
     </div>
 

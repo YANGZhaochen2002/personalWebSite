@@ -114,11 +114,37 @@ function displayEquipment(equipment) {
             <h4>${item.brand} - ${item.model}</h4>
             <p><strong>种类:</strong> ${item.category}</p>
             <p><strong>库存数量:</strong> ${item.count}</p>
-            <p><strong>赔损价格:</strong> ¥${item.damage_price.toFixed(2)}</p>
             <div class="price">日租金: ¥${item.daily_rental_price.toFixed(2)}</div>
             <button class="btn-select" type="button" onclick="addToCart(${item.ids[0]}, '${item.model}', '${item.brand}', ${item.daily_rental_price}, '${item.category}')">加入购物车</button>
         </div>
     `).join('');
+}
+
+
+/**
+ * 显示订单完成弹窗
+ */
+function showOrderSuccessModal(transactionCodes, count) {
+    const modal = document.getElementById('successModal');
+    const codeDisplay = document.getElementById('transactionCodeDisplay');
+    
+    let codesHTML = transactionCodes.map(code => `<div class="code-item">${code}</div>`).join('');
+    
+    codeDisplay.innerHTML = `
+        <div class="success-modal-content">
+            <div style="font-size: 2rem; margin-bottom: 15px;">✓</div>
+            <h3 style="color: #28a745; margin-bottom: 15px;">订单提交成功</h3>
+            <p style="margin-bottom: 15px; color: #666;">共${count}个设备订单已提交</p>
+            <div class="transaction-codes-list">
+                <p style="font-size: 0.85rem; color: #999; margin-bottom: 8px;">交易码（请保存）：</p>
+                ${codesHTML}
+            </div>
+            <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 12px; margin-top: 15px; color: #856404;">
+                <strong>⚠️ 重要提醒：</strong> 请立即截屏保存上方交易码，用于后续跟进
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
 }
 
 /**
@@ -385,9 +411,8 @@ async function handleRentalSubmit(e) {
         }
 
         if (successCount > 0) {
-            // 显示成功信息
-            const codesText = results.join('\n');
-            alert(`✓ 订单提交成功！共${successCount}个设备\n\n交易码：\n${codesText}\n\n请妥善保管这些码`);
+            // 显示成功模态框
+            showOrderSuccessModal(results, successCount);
 
             // 重置表单和购物车
             document.getElementById('rentalForm').reset();
@@ -702,11 +727,19 @@ async function loadAdminCustomers() {
 /**
  * 加载交易信息
  */
-async function loadAdminTransactions() {
+/**
+ * 加载交易（管理员）
+ */
+async function loadAdminTransactions(searchQuery = '') {
     try {
         if (!adminToken) return;
         
-        const response = await fetch(`${API_BASE}/admin/transactions`, {
+        let url = `${API_BASE}/admin/transactions`;
+        if (searchQuery) {
+            url += `?search=${encodeURIComponent(searchQuery)}`;
+        }
+        
+        const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
 
@@ -724,10 +757,10 @@ async function loadAdminTransactions() {
                         <td>${trans.equipment?.model || '-'}</td>
                         <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
                         <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
-                        <td>${trans.status}</td>
+                        <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
                         <td>${trans.responsible_person || '-'}</td>
                         <td>
-                            <button class="btn-edit" onclick="editTransaction(${trans.id})">编辑</button>
+                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}')">编辑</button>
                         </td>
                     </tr>
                 `).join('');
@@ -740,6 +773,102 @@ async function loadAdminTransactions() {
         console.error('Load transactions error:', err);
         const tbody = document.querySelector('#transactionsTable tbody');
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: red;">加载出错</td></tr>';
+    }
+}
+
+/**
+ * 搜索交易
+ */
+function searchTransactions() {
+    const searchInput = document.getElementById('transactionSearchInput');
+    const searchQuery = searchInput.value.trim();
+    loadAdminTransactions(searchQuery);
+}
+
+/**
+ * 打开编辑交易模态框
+ */
+function openEditTransactionModal(transactionId, currentStatus, currentResponsible) {
+    const modal = document.getElementById('editTransactionModal');
+    if (!modal) {
+        console.error('Transaction edit modal not found');
+        return;
+    }
+    
+    // 存储交易ID用于保存
+    modal.dataset.transactionId = transactionId;
+    
+    // 设置当前值
+    const statusSelect = document.getElementById('transactionStatus');
+    const responsibleInput = document.getElementById('transactionResponsible');
+    
+    if (statusSelect) {
+        statusSelect.value = currentStatus || 'pending';
+    }
+    if (responsibleInput) {
+        responsibleInput.value = currentResponsible || '';
+    }
+    
+    modal.style.display = 'flex';
+}
+
+/**
+ * 关闭编辑交易模态框
+ */
+function closeEditTransactionModal() {
+    const modal = document.getElementById('editTransactionModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+/**
+ * 保存交易更改
+ */
+async function saveTransactionChanges() {
+    if (!adminToken) {
+        alert('未登录，请重新登录');
+        return;
+    }
+    
+    const modal = document.getElementById('editTransactionModal');
+    const transactionId = modal.dataset.transactionId;
+    const statusSelect = document.getElementById('transactionStatus');
+    const responsibleInput = document.getElementById('transactionResponsible');
+    
+    const status = statusSelect?.value;
+    const responsiblePerson = responsibleInput?.value || null;
+    
+    if (!status || !transactionId) {
+        alert('数据不完整，请重试');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/transactions/${transactionId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({
+                status,
+                responsiblePerson
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('交易更新成功');
+            closeEditTransactionModal();
+            loadAdminTransactions(); // 刷新列表
+        } else {
+            alert('更新失败: ' + data.message);
+        }
+    } catch (err) {
+        console.error('Save transaction error:', err);
+        alert('保存出错，请重试');
     }
 }
 

@@ -461,6 +461,86 @@ table tr:hover {
     padding: 40px;
 }
 
+/* 搜索框样式 */
+.search-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.search-section input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.search-section button {
+    padding: 10px 20px;
+    font-size: 1rem;
+}
+
+/* 交易码列表样式 */
+.transaction-codes-list {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.code-item {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    padding: 8px 12px;
+    margin: 5px 0;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #dc3545;
+    text-align: center;
+    word-break: break-all;
+}
+
+/* 交易状态标签 */
+.status-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-confirmed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-shipped {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-returned {
+    background: #d6d8db;
+    color: #383d41;
+}
+
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
 /* 购物车样式 */
 .cart-section {
     background: #f8f9fa;
