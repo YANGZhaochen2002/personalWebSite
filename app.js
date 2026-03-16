@@ -6,6 +6,15 @@ const path = require('path');
 // Import routes
 const authRoutes = require('./routes/auth');
 
+// Check required environment variables
+const requiredEnvVars = ['JWT_SECRET', 'SUPABASE_URL', 'SUPABASE_KEY'];
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingVars.join(', '));
+  process.exit(1);
+}
+
 const app = express();
 
 // Middleware
