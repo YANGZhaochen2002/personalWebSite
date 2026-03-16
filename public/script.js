@@ -473,6 +473,7 @@ async function loadAdminCustomers() {
         });
 
         const data = await response.json();
+        console.log('Customers API response:', data);
         const tbody = document.querySelector('#customersTable tbody');
         
         if (data.success && data.data) {
@@ -513,6 +514,7 @@ async function loadAdminTransactions() {
         });
 
         const data = await response.json();
+        console.log('Transactions API response:', data);
         const tbody = document.querySelector('#transactionsTable tbody');
         
         if (data.success && data.data) {
