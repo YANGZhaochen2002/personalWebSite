@@ -132,8 +132,6 @@ function showOrderSuccessModal(transactionCodes, count) {
     
     codeDisplay.innerHTML = `
         <div class="success-modal-content">
-            <div style="font-size: 2rem; margin-bottom: 15px;">✓</div>
-            <h3 style="color: #28a745; margin-bottom: 15px;">订单提交成功</h3>
             <p style="margin-bottom: 15px; color: #666;">共${count}个设备订单已提交</p>
             <div class="transaction-codes-list">
                 <p style="font-size: 0.85rem; color: #999; margin-bottom: 8px;">交易码（请保存）：</p>
@@ -754,7 +752,7 @@ async function loadAdminTransactions(searchQuery = '') {
                     <tr>
                         <td><strong>${trans.transaction_code}</strong></td>
                         <td>${trans.customers?.name || '-'}</td>
-                        <td>${trans.equipment?.model || '-'}</td>
+                        <td>${trans.equipment?.equipment_code || '-'}</td>
                         <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
                         <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
                         <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
