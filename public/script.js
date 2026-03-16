@@ -3,6 +3,17 @@ let adminToken = localStorage.getItem('adminToken');
 let currentTab = 'customer';
 let selectedEquipment = null;
 
+// 品牌和种类的映射关系
+const categoryBrandMap = {
+    '相机机身': ['FUJIFILM', 'RICOH', 'Canon'],
+    '运动相机': ['DJI'],
+    '相机镜头': ['Canon', 'Fujifilm（X卡口）', 'Tamron'],
+    '手机': ['vivo'],
+    '拍立得': ['FUJIFILM'],
+    '三脚架': ['Fotopro'],
+    '闪光灯': ['Godox']
+};
+
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     // 如果已登录管理员，直接进入管理员界面
@@ -35,6 +46,7 @@ async function loadEquipment() {
         const params = new URLSearchParams();
         const brand = document.getElementById('brandFilter')?.value;
         const category = document.getElementById('categoryFilter')?.value;
+        const location = document.getElementById('locationFilter')?.value;
         const minPrice = document.getElementById('minPriceFilter')?.value;
         const maxPrice = document.getElementById('maxPriceFilter')?.value;
 
@@ -47,7 +59,14 @@ async function loadEquipment() {
         const data = await response.json();
 
         if (data.success) {
-            displayEquipment(data.data);
+            // 如果选择了位置，在前端过滤
+            let filteredData = data.data;
+            if (location) {
+                filteredData = data.data.filter(item => {
+                    return getLocationFromModel(item.model) === location;
+                });
+            }
+            displayEquipment(filteredData);
         } else {
             showError('equipmentList', '加载设备失败');
         }
@@ -55,6 +74,15 @@ async function loadEquipment() {
         console.error('Load equipment error:', err);
         showError('equipmentList', '加载设备出错');
     }
+}
+
+/**
+ * 从model中解析位置信息
+ */
+function getLocationFromModel(model) {
+    if (!model) return '';
+    const parts = model.split('-');
+    return parts.length > 1 ? parts[parts.length - 1] : '';
 }
 
 /**
@@ -89,15 +117,6 @@ async function loadFilters() {
         const data = await response.json();
 
         if (data.success) {
-            // 填充品牌
-            const brandSelect = document.getElementById('brandFilter');
-            data.brands.forEach(brand => {
-                const option = document.createElement('option');
-                option.value = brand;
-                option.textContent = brand;
-                brandSelect.appendChild(option);
-            });
-
             // 填充种类
             const categorySelect = document.getElementById('categoryFilter');
             data.categories.forEach(category => {
@@ -106,9 +125,36 @@ async function loadFilters() {
                 option.textContent = category;
                 categorySelect.appendChild(option);
             });
+            
+            // 添加category变化事件监听，动态更新品牌
+            categorySelect.addEventListener('change', updateBrandFilter);
         }
     } catch (err) {
         console.error('Load filters error:', err);
+    }
+}
+
+/**
+ * 根据选择的种类更新品牌筛选器
+ */
+function updateBrandFilter() {
+    const categorySelect = document.getElementById('categoryFilter');
+    const brandSelect = document.getElementById('brandFilter');
+    const selectedCategory = categorySelect.value;
+    
+    // 清空品牌选项，保留"所有品牌"
+    while (brandSelect.options.length > 1) {
+        brandSelect.remove(1);
+    }
+    
+    // 如果选择了种类，加载对应的品牌
+    if (selectedCategory && categoryBrandMap[selectedCategory]) {
+        categoryBrandMap[selectedCategory].forEach(brand => {
+            const option = document.createElement('option');
+            option.value = brand;
+            option.textContent = brand;
+            brandSelect.appendChild(option);
+        });
     }
 }
 

@@ -28,11 +28,16 @@
                 
                 <!-- 筛选器 -->
                 <div class="filters">
+                    <select id="categoryFilter" onchange="applyFilters()">
+                        <option value="">所有种类</option>
+                    </select>
                     <select id="brandFilter" onchange="applyFilters()">
                         <option value="">所有品牌</option>
                     </select>
-                    <select id="categoryFilter" onchange="applyFilters()">
-                        <option value="">所有种类</option>
+                    <select id="locationFilter" onchange="applyFilters()">
+                        <option value="">所有地址</option>
+                        <option value="北京">北京</option>
+                        <option value="成都">成都</option>
                     </select>
                     <input type="number" id="minPriceFilter" placeholder="最低日租价" onchange="applyFilters()">
                     <input type="number" id="maxPriceFilter" placeholder="最高日租价" onchange="applyFilters()">
