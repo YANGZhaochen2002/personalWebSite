@@ -824,7 +824,6 @@ function closeEditTransactionModal() {
  */
 async function saveTransactionChanges() {
     if (!adminToken) {
-        alert('未登录，请重新登录');
         return;
     }
     
@@ -837,7 +836,6 @@ async function saveTransactionChanges() {
     const responsiblePerson = responsibleInput?.value || null;
     
     if (!status || !transactionId) {
-        alert('数据不完整，请重试');
         return;
     }
     
@@ -857,15 +855,11 @@ async function saveTransactionChanges() {
         const data = await response.json();
         
         if (data.success) {
-            alert('交易更新成功');
             closeEditTransactionModal();
             loadAdminTransactions(); // 刷新列表
-        } else {
-            alert('更新失败: ' + data.message);
         }
     } catch (err) {
         console.error('Save transaction error:', err);
-        alert('保存出错，请重试');
     }
 }
 
