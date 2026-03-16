@@ -209,11 +209,8 @@ router.post('/rental', async (req, res) => {
 
     if (transactionError) throw transactionError;
 
-    // 更新设备库存状态为不在库
-    await supabase
-      .from('equipment')
-      .update({ in_stock: false })
-      .eq('id', equipmentId);
+    // 注：新创建的交易状态为 pending（待确认），不修改设备库存
+    // 只有当交易状态改为 confirmed 或之后才修改设备库存
 
     res.status(201).json({
       success: true,

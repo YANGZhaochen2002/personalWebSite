@@ -344,30 +344,31 @@ router.put('/transactions/:transactionId', async (req, res) => {
       });
     }
 
-    // 根据新状态决定设备库存
-    let inStock = true; // 默认为在库
-    
-    if (status && ['rented', 'shipped', 'pending', 'confirmed'].includes(status)) {
-      // 这些状态表示设备正在出租，不在库
-      inStock = false;
-    } else if (status && ['returned', 'completed', 'cancelled', 'damaged'].includes(status)) {
-      // 这些状态表示设备已回库或交易已取消
-      // 需要检查是否还有其他活跃的交易
-      const { data: activeTransactions, error: activeError } = await supabase
-        .from('transactions')
-        .select('id')
-        .eq('equipment_id', transaction.equipment_id)
-        .neq('id', transactionId)
-        .in('status', ['pending', 'confirmed', 'rented', 'shipped']);
+    // 只在状态不是 pending 时才修改设备库存
+    // pending 状态表示待确认，不改变设备库存
+    if (status && status !== 'pending' && transaction.equipment_id) {
+      let inStock = true; // 默认为在库
       
-      if (activeError) throw activeError;
-      
-      // 如果没有其他活跃交易，设备才能回库
-      inStock = !activeTransactions || activeTransactions.length === 0;
-    }
+      if (['confirmed', 'rented', 'shipped'].includes(status)) {
+        // 这些状态表示设备正在出租，不在库
+        inStock = false;
+      } else if (['returned', 'completed', 'cancelled', 'damaged'].includes(status)) {
+        // 这些状态表示设备已回库或交易已取消
+        // 需要检查是否还有其他活跃的交易
+        const { data: activeTransactions, error: activeError } = await supabase
+          .from('transactions')
+          .select('id')
+          .eq('equipment_id', transaction.equipment_id)
+          .neq('id', transactionId)
+          .in('status', ['confirmed', 'rented', 'shipped']);
+        
+        if (activeError) throw activeError;
+        
+        // 如果没有其他活跃交易，设备才能回库
+        inStock = !activeTransactions || activeTransactions.length === 0;
+      }
 
-    // 如果设备ID存在，更新设备库存状态
-    if (transaction.equipment_id) {
+      // 更新设备库存状态
       await supabase
         .from('equipment')
         .update({ in_stock: inStock })
