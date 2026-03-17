@@ -135,12 +135,7 @@ router.post('/rental', async (req, res) => {
 
     // 根据订单类型进行验证
     if (transactionType === 'shipping') {
-      if (!deliveryAddress) {
-        return res.status(400).json({
-          success: false,
-          message: '邮寄方式需要提供收货地址'
-        });
-      }
+      // 邮寄方式下地址为可选
     } else if (transactionType === 'pickup') {
       if (!pickupTime || !returnPickupTime) {
         return res.status(400).json({
