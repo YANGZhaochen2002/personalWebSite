@@ -1095,7 +1095,13 @@ function copyCustomerInfo() {
             copyBtn.textContent = originalText;
         }, 2000);
     }).catch(err => {
+        // 临时改变按钮文字显示复制成功
+        const copyBtn = event.target;
+        const originalText = copyBtn.textContent;
         copyBtn.textContent = '✓ 已复制';
+        setTimeout(() => {
+            copyBtn.textContent = originalText;
+        }, 2000);
     });
 }
 
