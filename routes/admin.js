@@ -379,7 +379,7 @@ router.get('/transactions', async (req, res) => {
 
     // 排序：默认按created_at，如果指定sortBy='posting_date'则按posting_date排序
     if (sortBy === 'posting_date') {
-      let { data, error } = await query.order('posting_date', { ascending: false, nullsFirst: false });
+      let { data, error } = await query.order('posting_date', { ascending: true, nullsFirst: false });
       if (error) throw error;
 
       // 在前端进行搜索过滤（通过客户名或交易码）
@@ -489,7 +489,7 @@ router.get('/transactions/:transactionId', async (req, res) => {
 router.put('/transactions/:transactionId', async (req, res) => {
   try {
     const { transactionId } = req.params;
-    const { status, responsiblePerson, postingDate, postingTime, remarks } = req.body;
+    const { status, responsiblePerson, postingDate, postingTime, remarks, shippingCost } = req.body;
 
     // 首先获取交易信息以获取equipment_id、旧状态和rental_end_date
     const { data: transaction, error: fetchError } = await supabase
@@ -579,6 +579,7 @@ router.put('/transactions/:transactionId', async (req, res) => {
     if (postingDate !== undefined) updateData.posting_date = postingDate;
     if (postingTime !== undefined) updateData.posting_time = postingTime;
     if (remarks !== undefined) updateData.remarks = remarks;
+    if (shippingCost !== undefined) updateData.shipping_cost = shippingCost;
 
     // 更新交易
     const { data, error } = await supabase

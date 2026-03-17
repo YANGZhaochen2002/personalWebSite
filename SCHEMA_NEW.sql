@@ -56,6 +56,7 @@ CREATE TABLE transactions (
   rental_start_date DATE NOT NULL,
   rental_end_date DATE NOT NULL,
   total_price DECIMAL(10, 2) NOT NULL,
+  shipping_cost DECIMAL(10, 2) DEFAULT 0,
   responsible_person VARCHAR(255),
   status VARCHAR(50) DEFAULT 'pending',
   posting_date DATE,

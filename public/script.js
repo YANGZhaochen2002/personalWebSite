@@ -148,7 +148,7 @@ function showOrderSuccessModal(transactionCodes, count) {
                 ${codesHTML}
             </div>
             <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 12px; margin-top: 15px; color: #856404;">
-                <strong>⚠️ 重要提醒：</strong> 请立即截屏保存上方交易码，用于后续跟进
+                <strong>⚠️ 重要提醒：</strong> 请复制上方交易码，发送至客服，用于后续跟进
             </div>
         </div>
     `;
@@ -1051,7 +1051,7 @@ async function loadAdminTransactions(searchQuery = '') {
                         <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
                         <td>${trans.responsible_person || '-'}</td>
                         <td>
-                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}', '${trans.posting_date || ''}', '${trans.posting_time || ''}', '${cleanedRemarks}')">编辑</button>
+                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}', '${trans.posting_date || ''}', '${trans.posting_time || ''}', '${cleanedRemarks}', ${trans.shipping_cost || 0})">编辑</button>
                         </td>
                     </tr>
                 `;
@@ -1099,7 +1099,7 @@ function searchTransactions() {
 /**
  * 打开编辑交易模态框
  */
-function openEditTransactionModal(transactionId, currentStatus, currentResponsible, currentPostingDate, currentPostingTime, currentRemarks) {
+function openEditTransactionModal(transactionId, currentStatus, currentResponsible, currentPostingDate, currentPostingTime, currentRemarks, currentShippingCost) {
     const modal = document.getElementById('editTransactionModal');
     if (!modal) {
         console.error('Transaction edit modal not found');
@@ -1115,6 +1115,7 @@ function openEditTransactionModal(transactionId, currentStatus, currentResponsib
     const postingDateInput = document.getElementById('transactionPostingDate');
     const postingTimeInput = document.getElementById('transactionPostingTime');
     const remarksInput = document.getElementById('transactionRemarks');
+    const shippingCostInput = document.getElementById('transactionShippingCost');
     
     if (statusSelect) {
         statusSelect.value = currentStatus || 'pending';
@@ -1130,6 +1131,9 @@ function openEditTransactionModal(transactionId, currentStatus, currentResponsib
     }
     if (remarksInput) {
         remarksInput.value = currentRemarks || '';
+    }
+    if (shippingCostInput) {
+        shippingCostInput.value = currentShippingCost || 0;
     }
     
     modal.style.display = 'flex';
@@ -1160,12 +1164,14 @@ async function saveTransactionChanges() {
     const postingDateInput = document.getElementById('transactionPostingDate');
     const postingTimeInput = document.getElementById('transactionPostingTime');
     const remarksInput = document.getElementById('transactionRemarks');
+    const shippingCostInput = document.getElementById('transactionShippingCost');
     
     const status = statusSelect?.value;
     const responsiblePerson = responsibleInput?.value || null;
     const postingDate = postingDateInput?.value || null;
     const postingTime = postingTimeInput?.value || null;
     const remarks = remarksInput?.value || null;
+    const shippingCost = shippingCostInput?.value ? parseFloat(shippingCostInput.value) : 0;
     
     if (!status || !transactionId) {
         return;
@@ -1183,7 +1189,8 @@ async function saveTransactionChanges() {
                 responsiblePerson,
                 postingDate,
                 postingTime,
-                remarks
+                remarks,
+                shippingCost
             })
         });
         
