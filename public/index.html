@@ -214,28 +214,60 @@
                         <div style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
                             <label style="font-weight: 600;">排序方式:</label>
                             <select id="sortBySelect" onchange="loadAdminTransactions()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="posting_date" selected>按邮寄时间</option>
                                 <option value="created_at">按创建时间</option>
-                                <option value="posting_date">按邮寄时间</option>
                             </select>
                         </div>
                     </div>
                     
-                    <div id="transactionsTableContainer" class="table-container">
-                        <table id="transactionsTable">
-                            <thead>
-                                <tr>
-                                    <th>交易码</th>
-                                    <th>客户</th>
-                                    <th>设备</th>
-                                    <th>租期</th>
-                                    <th>总价格</th>
-                                    <th>状态</th>
-                                    <th>负责人</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <!-- 最近3天的邮寄 -->
+                    <div style="margin-top: 30px;">
+                        <h4 style="color: #ff6b35; font-weight: 600; margin-bottom: 10px;">📮 最近3天邮寄</h4>
+                        <div id="upcomingTransactionsContainer" class="table-container">
+                            <table id="upcomingTransactionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>交易码</th>
+                                        <th>客户</th>
+                                        <th>设备</th>
+                                        <th>租期</th>
+                                        <th>邮寄日期</th>
+                                        <th>邮寄时间</th>
+                                        <th>备注</th>
+                                        <th>总价格</th>
+                                        <th>状态</th>
+                                        <th>负责人</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 其他交易 -->
+                    <div style="margin-top: 30px;">
+                        <h4 style="color: #666; font-weight: 600; margin-bottom: 10px;">📋 其他交易</h4>
+                        <div id="otherTransactionsContainer" class="table-container">
+                            <table id="otherTransactionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>交易码</th>
+                                        <th>客户</th>
+                                        <th>设备</th>
+                                        <th>租期</th>
+                                        <th>邮寄日期</th>
+                                        <th>邮寄时间</th>
+                                        <th>备注</th>
+                                        <th>总价格</th>
+                                        <th>状态</th>
+                                        <th>负责人</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -288,6 +320,38 @@
                     <button type="button" class="btn-secondary" onclick="closeEditTransactionModal()" style="flex: 1;">取消</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 客户详情模态框 -->
+    <div id="customerDetailsModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2>客户信息</h2>
+            <div id="customerDetailsContent" style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: flex; gap: 30px;">
+                    <div>
+                        <p style="color: #666; margin-bottom: 5px;">客户名</p>
+                        <p id="detailCustomerName" style="font-weight: 600; font-size: 16px;">-</p>
+                    </div>
+                    <div>
+                        <p style="color: #666; margin-bottom: 5px;">昵称</p>
+                        <p id="detailCustomerNickname" style="font-weight: 600; font-size: 16px;">-</p>
+                    </div>
+                </div>
+                <div>
+                    <p style="color: #666; margin-bottom: 5px;">联系方式</p>
+                    <p id="detailCustomerPhone" style="font-weight: 600; font-size: 16px;">-</p>
+                </div>
+                <div>
+                    <p style="color: #666; margin-bottom: 5px;">收件地址</p>
+                    <p id="detailCustomerAddress" style="font-weight: 600; font-size: 16px;">-</p>
+                </div>
+                <div>
+                    <p style="color: #666; margin-bottom: 5px;">交易数量</p>
+                    <p id="detailCustomerTransactionCount" style="font-weight: 600; font-size: 16px;">-</p>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="closeCustomerDetailsModal()" style="width: 100%; margin-top: 20px;">关闭</button>
         </div>
     </div>
 

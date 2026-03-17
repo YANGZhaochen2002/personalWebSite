@@ -301,7 +301,7 @@ router.delete('/equipment/:equipmentId', async (req, res) => {
  */
 router.get('/transactions', async (req, res) => {
   try {
-    const { status, search, sortBy, startDate, endDate } = req.query;
+    const { status, search, sortBy, startDate, endDate, customerId } = req.query;
 
     let query = supabase
       .from('transactions')
@@ -313,6 +313,10 @@ router.get('/transactions', async (req, res) => {
 
     if (status) {
       query = query.eq('status', status);
+    }
+
+    if (customerId) {
+      query = query.eq('customer_id', customerId);
     }
 
     // 按邮寄日期筛选（如果提供了日期范围）

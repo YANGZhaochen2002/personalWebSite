@@ -742,7 +742,7 @@ async function loadAdminCustomers() {
                         <td>${customer.nickname || '-'}</td>
                         <td>${customer.delivery_address}</td>
                         <td>
-                            <button class="btn-edit" onclick="viewCustomerDetails(${customer.id})">查看</button>
+                            <button class="btn-edit" onclick="viewCustomerDetailsModal(${customer.id})">查看</button>
                         </td>
                     </tr>
                 `).join('');
@@ -769,7 +769,7 @@ async function loadAdminTransactions(searchQuery = '') {
         if (!adminToken) return;
         
         const sortBySelect = document.getElementById('sortBySelect');
-        const sortBy = sortBySelect?.value || 'created_at';
+        const sortBy = sortBySelect?.value || 'posting_date';
         
         let url = `${API_BASE}/admin/transactions?sortBy=${sortBy}`;
         if (searchQuery) {
@@ -781,38 +781,81 @@ async function loadAdminTransactions(searchQuery = '') {
         });
 
         const data = await response.json();
-        const tbody = document.querySelector('#transactionsTable tbody');
         
         if (data.success && data.data) {
-            if (data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: #999;">暂无交易数据</td></tr>';
+            // 分离最近3天的交易和其他交易
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const threeDaysLater = new Date(today);
+            threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+            
+            const upcomingTransactions = [];
+            const otherTransactions = [];
+            
+            data.data.forEach(trans => {
+                if (trans.posting_date) {
+                    const postingDate = new Date(trans.posting_date);
+                    postingDate.setHours(0, 0, 0, 0);
+                    
+                    if (postingDate >= today && postingDate < threeDaysLater) {
+                        upcomingTransactions.push(trans);
+                    } else {
+                        otherTransactions.push(trans);
+                    }
+                } else {
+                    otherTransactions.push(trans);
+                }
+            });
+            
+            // 生成表格行的辅助函数
+            const generateTableRow = (trans) => {
+                const cleanedRemarks = (trans.remarks || '').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+                return `
+                    <tr>
+                        <td><strong>${trans.transaction_code}</strong></td>
+                        <td><a href="javascript:viewCustomerDetailsModal(${trans.customers?.id || 'null'})" style="color: #007bff; cursor: pointer; text-decoration: none; font-weight: 600;">${trans.customers?.name || '-'}</a></td>
+                        <td>${trans.equipment?.equipment_code || '-'}</td>
+                        <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
+                        <td>${trans.posting_date || '-'}</td>
+                        <td>${trans.posting_time || '-'}</td>
+                        <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${trans.remarks || ''}">${trans.remarks || '-'}</td>
+                        <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
+                        <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
+                        <td>${trans.responsible_person || '-'}</td>
+                        <td>
+                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}', '${trans.posting_date || ''}', '${trans.posting_time || ''}', '${cleanedRemarks}')">编辑</button>
+                        </td>
+                    </tr>
+                `;
+            };
+            
+            // 填充最近3天的交易表格
+            const upcomingTbody = document.querySelector('#upcomingTransactionsTable tbody');
+            if (upcomingTransactions.length === 0) {
+                upcomingTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: #999;">暂无最近3天的邮寄</td></tr>';
             } else {
-                const html = data.data.map(trans => {
-                    const highlightClass = trans.highlightPostingDate ? 'highlight-posting-date' : '';
-                    return `
-                        <tr class="${highlightClass}">
-                            <td><strong>${trans.transaction_code}</strong></td>
-                            <td>${trans.customers?.name || '-'}</td>
-                            <td>${trans.equipment?.equipment_code || '-'}</td>
-                            <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
-                            <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
-                            <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
-                            <td>${trans.responsible_person || '-'}</td>
-                            <td>
-                                <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}', '${trans.posting_date || ''}', '${trans.posting_time || ''}', '${(trans.remarks || '').replace(/'/g, "\\'")}')">编辑</button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-                tbody.innerHTML = html;
+                upcomingTbody.innerHTML = upcomingTransactions.map(generateTableRow).join('');
+            }
+            
+            // 填充其他交易表格
+            const otherTbody = document.querySelector('#otherTransactionsTable tbody');
+            if (otherTransactions.length === 0) {
+                otherTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: #999;">暂无其他交易</td></tr>';
+            } else {
+                otherTbody.innerHTML = otherTransactions.map(generateTableRow).join('');
             }
         } else {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: red;">加载失败</td></tr>';
+            const upcomingTbody = document.querySelector('#upcomingTransactionsTable tbody');
+            const otherTbody = document.querySelector('#otherTransactionsTable tbody');
+            upcomingTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: red;">加载失败</td></tr>';
+            otherTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: red;">加载失败</td></tr>';
         }
     } catch (err) {
         console.error('Load transactions error:', err);
-        const tbody = document.querySelector('#transactionsTable tbody');
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: red;">加载出错</td></tr>';
+        const upcomingTbody = document.querySelector('#upcomingTransactionsTable tbody');
+        const otherTbody = document.querySelector('#otherTransactionsTable tbody');
+        upcomingTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: red;">加载出错</td></tr>';
+        otherTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: red;">加载出错</td></tr>';
     }
 }
 
@@ -976,6 +1019,54 @@ function closeModal() {
  */
 function editEquipment(equipmentId) {
     alert('编辑功能开发中');
+}
+
+/**
+ * 查看客户详情（弹窗）
+ */
+async function viewCustomerDetailsModal(customerId) {
+    if (!customerId || customerId === 'null') {
+        alert('无效的客户ID');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/customers/${customerId}`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+            const customer = data.data;
+            document.getElementById('detailCustomerName').textContent = customer.name || '-';
+            document.getElementById('detailCustomerNickname').textContent = customer.nickname || '-';
+            document.getElementById('detailCustomerPhone').textContent = customer.contact_phone || '-';
+            document.getElementById('detailCustomerAddress').textContent = customer.delivery_address || '-';
+            
+            // 获取该客户的交易数量
+            const transResponse = await fetch(`${API_BASE}/admin/transactions?customerId=${customerId}`, {
+                headers: { 'Authorization': `Bearer ${adminToken}` }
+            });
+            const transData = await transResponse.json();
+            const transactionCount = transData.success && transData.data ? transData.data.length : 0;
+            document.getElementById('detailCustomerTransactionCount').textContent = transactionCount;
+            
+            document.getElementById('customerDetailsModal').style.display = 'flex';
+        } else {
+            alert('加载客户信息失败');
+        }
+    } catch (err) {
+        console.error('Load customer details error:', err);
+        alert('加载客户信息出错');
+    }
+}
+
+/**
+ * 关闭客户详情模态框
+ */
+function closeCustomerDetailsModal() {
+    document.getElementById('customerDetailsModal').style.display = 'none';
 }
 
 /**
