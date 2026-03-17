@@ -406,12 +406,8 @@ async function handleRentalSubmit(e) {
     let returnPickupTime = null;
 
     if (transactionType === 'shipping') {
-        deliveryAddress = document.getElementById('deliveryAddress').value;
+        deliveryAddress = document.getElementById('deliveryAddress').value || null; // 地址改为可选
         returnAddress = document.getElementById('returnAddress').value || deliveryAddress; // 寄回地址默认等于收货地址
-        if (!deliveryAddress) {
-            alert('邮寄方式需要填写收货地址');
-            return;
-        }
     } else if (transactionType === 'pickup') {
         pickupTime = document.getElementById('pickupTime').value;
         returnPickupTime = document.getElementById('returnPickupTime').value;
@@ -519,8 +515,8 @@ function updateOrderTypeFields() {
     if (transactionType === 'shipping') {
         shippingSection.style.display = 'block';
         pickupSection.style.display = 'none';
-        // 邮寄方式下，地址为必填
-        document.getElementById('deliveryAddress').required = true;
+        // 邮寄方式下，地址为可选
+        document.getElementById('deliveryAddress').required = false;
         document.getElementById('pickupTime').required = false;
         document.getElementById('returnPickupTime').required = false;
     } else if (transactionType === 'pickup') {
@@ -531,6 +527,61 @@ function updateOrderTypeFields() {
         document.getElementById('pickupTime').required = true;
         document.getElementById('returnPickupTime').required = true;
     }
+}
+
+/**
+ * 备注高亮处理函数
+ */
+function addRemarkHighlight(color) {
+    const textarea = document.getElementById('transactionRemarks');
+    if (!textarea.selectionStart && !textarea.selectionEnd) {
+        alert('请先选中要高亮的文本');
+        return;
+    }
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    const before = textarea.value.substring(0, start);
+    const after = textarea.value.substring(end);
+    
+    const colorMap = {
+        'yellow': '黄',
+        'red': '红',
+        'cyan': '青',
+        'green': '绿'
+    };
+    
+    const colorLabel = colorMap[color] || color;
+    const highlightedText = `[${colorLabel}]${selectedText}[/${colorLabel}]`;
+    textarea.value = before + highlightedText + after;
+    
+    // 将光标位置设置在新文本之后
+    const newCursorPos = start + highlightedText.length;
+    textarea.focus();
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+}
+
+/**
+ * 解析备注中的高亮标记
+ */
+function parseRemarkHighlights(remarksText) {
+    if (!remarksText) return '-';
+    
+    const colorStyles = {
+        '黄': 'background-color: #ffeb3b; padding: 2px 4px; border-radius: 2px;',
+        '红': 'background-color: #ff4444; color: white; padding: 2px 4px; border-radius: 2px;',
+        '青': 'background-color: #00bcd4; color: white; padding: 2px 4px; border-radius: 2px;',
+        '绿': 'background-color: #4caf50; color: white; padding: 2px 4px; border-radius: 2px;'
+    };
+    
+    let html = remarksText;
+    for (const [color, style] of Object.entries(colorStyles)) {
+        const pattern = new RegExp(`\\[${color}\\]([^\\[]*?)\\[/${color}\\]`, 'g');
+        html = html.replace(pattern, `<span style="${style}">$1</span>`);
+    }
+    
+    return html;
 }
 
 /**
@@ -953,7 +1004,7 @@ async function loadAdminTransactions(searchQuery = '') {
                         <td>${trans.equipment?.equipment_code || '-'}</td>
                         <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
                         <td style="font-size: 12px; color: #666;">${additionalInfo}</td>
-                        <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${trans.remarks || ''}">${trans.remarks || '-'}</td>
+                        <td style="max-width: 150px; word-break: break-word;" title="${trans.remarks || ''}">${parseRemarkHighlights(trans.remarks) || '-'}</td>
                         <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
                         <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
                         <td>${trans.responsible_person || '-'}</td>
