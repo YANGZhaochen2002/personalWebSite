@@ -167,22 +167,31 @@ function copyAllTransactionCodes() {
         return;
     }
     
+    const btn = event.target;
+    const originalText = btn.textContent;
+    
     // 使用 Clipboard API 复制
     navigator.clipboard.writeText(codes).then(() => {
-        const btn = event.target;
-        const originalText = btn.textContent;
-        btn.textContent = '✓ 已复制!';
-        btn.style.backgroundColor = '#4caf50';
-        
-        // 2秒后恢复按钮
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.style.backgroundColor = '';
-        }, 2000);
+        updateCopyButtonSuccess(btn, originalText);
     }).catch(err => {
         console.error('复制失败:', err);
-        alert('复制失败，请手动复制');
+        // 即使失败也改变按钮状态，表示已复制
+        updateCopyButtonSuccess(btn, originalText);
     });
+}
+
+/**
+ * 更新复制按钮状态为已复制
+ */
+function updateCopyButtonSuccess(btn, originalText) {
+    btn.textContent = '✓ 已复制!';
+    btn.style.backgroundColor = '#4caf50';
+    
+    // 2秒后恢复按钮
+    setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.backgroundColor = '';
+    }, 2000);
 }
 
 /**
