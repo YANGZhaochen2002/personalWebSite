@@ -1094,9 +1094,6 @@ function copyCustomerInfo() {
         setTimeout(() => {
             copyBtn.textContent = originalText;
         }, 2000);
-    }).catch(err => {
-        console.error('复制失败:', err);
-        alert('复制失败，请手动复制');
     });
 }
 
