@@ -1048,6 +1048,7 @@ async function loadAdminTransactions(searchQuery = '') {
                         <td style="font-size: 12px; color: #666;">${additionalInfo}</td>
                         <td style="max-width: 150px; word-break: break-word;" title="${trans.remarks || ''}">${parseRemarkHighlights(trans.remarks) || '-'}</td>
                         <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
+                        <td>¥${parseFloat(trans.shipping_cost || 0).toFixed(2)}</td>
                         <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
                         <td>${trans.responsible_person || '-'}</td>
                         <td>

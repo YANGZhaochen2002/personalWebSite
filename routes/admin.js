@@ -377,9 +377,9 @@ router.get('/transactions', async (req, res) => {
       query = query.lte('posting_date', endDate);
     }
 
-    // 排序：默认按created_at，如果指定sortBy='posting_date'则按posting_date排序
+    // 排序：默认按created_at，如果指定sortBy='posting_date'则按posting_date和pickup_time排序
     if (sortBy === 'posting_date') {
-      let { data, error } = await query.order('posting_date', { ascending: true, nullsFirst: false });
+      let { data, error } = await query;
       if (error) throw error;
 
       // 在前端进行搜索过滤（通过客户名或交易码）
@@ -393,6 +393,19 @@ router.get('/transactions', async (req, res) => {
         });
       }
 
+      // 按邮寄时间和自提时间混合排序
+      data = data.sort((a, b) => {
+        const dateA = a.transaction_type === 'pickup' && a.pickup_time 
+          ? new Date(a.pickup_time).getTime()
+          : a.posting_date ? new Date(a.posting_date).getTime() : Infinity;
+        
+        const dateB = b.transaction_type === 'pickup' && b.pickup_time
+          ? new Date(b.pickup_time).getTime()
+          : b.posting_date ? new Date(b.posting_date).getTime() : Infinity;
+        
+        return dateA - dateB;
+      });
+
       // 高亮近三天的邮寄：在response中添加标记
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -401,7 +414,11 @@ router.get('/transactions', async (req, res) => {
 
       data = data.map(transaction => {
         let highlightPostingDate = false;
-        if (transaction.posting_date) {
+        if (transaction.transaction_type === 'pickup' && transaction.pickup_time) {
+          const pickupDate = new Date(transaction.pickup_time);
+          pickupDate.setHours(0, 0, 0, 0);
+          highlightPostingDate = pickupDate >= today && pickupDate < threeDaysLater;
+        } else if (transaction.posting_date) {
           const postingDate = new Date(transaction.posting_date);
           postingDate.setHours(0, 0, 0, 0);
           highlightPostingDate = postingDate >= today && postingDate < threeDaysLater;
