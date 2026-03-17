@@ -354,6 +354,35 @@
         </div>
     </div>
 
+    <!-- 编辑客户信息模态框 -->
+    <div id="editCustomerModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2>编辑客户信息</h2>
+            <form style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">客户名 *</label>
+                    <input type="text" id="editCustomerName" placeholder="客户名" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">联系方式</label>
+                    <input type="tel" id="editCustomerPhone" placeholder="联系方式" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">昵称</label>
+                    <input type="text" id="editCustomerNickname" placeholder="昵称" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">收件地址 *</label>
+                    <textarea id="editCustomerAddress" placeholder="收件地址" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px; resize: vertical;"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn-primary" onclick="saveCustomerChanges()" style="flex: 1;">保存</button>
+                    <button type="button" class="btn-secondary" onclick="closeEditCustomerModal()" style="flex: 1;">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="/script.js"></script>
 </body>
 </html>

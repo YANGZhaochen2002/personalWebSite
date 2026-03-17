@@ -743,6 +743,7 @@ async function loadAdminCustomers() {
                         <td>${customer.delivery_address}</td>
                         <td>
                             <button class="btn-edit" onclick="viewCustomerDetailsModal(${customer.id})">查看</button>
+                            <button class="btn-edit" onclick="openEditCustomerModal(${customer.id})">编辑</button>
                         </td>
                     </tr>
                 `).join('');
@@ -1109,6 +1110,113 @@ function copyCustomerInfo(button) {
  */
 function viewCustomerDetails(customerId) {
     alert('客户详情功能开发中');
+}
+
+/**
+ * 打开编辑客户模态框
+ */
+async function openEditCustomerModal(customerId) {
+    if (!customerId || customerId === 'null') {
+        alert('无效的客户ID');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/customers/${customerId}`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.customer) {
+            const customer = data.customer;
+            
+            // 存储客户ID用于保存
+            const modal = document.getElementById('editCustomerModal');
+            modal.dataset.customerId = customerId;
+            
+            // 填充表单
+            document.getElementById('editCustomerName').value = customer.name || '';
+            document.getElementById('editCustomerPhone').value = customer.contact_phone || '';
+            document.getElementById('editCustomerNickname').value = customer.nickname || '';
+            document.getElementById('editCustomerAddress').value = customer.delivery_address || '';
+            
+            modal.style.display = 'flex';
+        } else {
+            alert('加载客户信息失败: ' + (data.message || '未知错误'));
+        }
+    } catch (err) {
+        console.error('Load customer for edit error:', err);
+        alert('加载客户信息出错: ' + err.message);
+    }
+}
+
+/**
+ * 关闭编辑客户模态框
+ */
+function closeEditCustomerModal() {
+    document.getElementById('editCustomerModal').style.display = 'none';
+    // 清空表单
+    document.getElementById('editCustomerName').value = '';
+    document.getElementById('editCustomerPhone').value = '';
+    document.getElementById('editCustomerNickname').value = '';
+    document.getElementById('editCustomerAddress').value = '';
+}
+
+/**
+ * 保存客户信息更改
+ */
+async function saveCustomerChanges() {
+    if (!adminToken) {
+        alert('未登录');
+        return;
+    }
+    
+    const modal = document.getElementById('editCustomerModal');
+    const customerId = modal.dataset.customerId;
+    
+    const name = document.getElementById('editCustomerName').value.trim();
+    const phone = document.getElementById('editCustomerPhone').value.trim();
+    const nickname = document.getElementById('editCustomerNickname').value.trim();
+    const address = document.getElementById('editCustomerAddress').value.trim();
+    
+    if (!name || !address) {
+        alert('客户名和收件地址为必填项');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/customers/${customerId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({
+                name,
+                contactPhone: phone,
+                nickname,
+                deliveryAddress: address
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('客户信息保存成功');
+            closeEditCustomerModal();
+            loadAdminCustomers(); // 刷新客户列表
+        } else {
+            alert('保存失败: ' + (data.message || '未知错误'));
+        }
+    } catch (err) {
+        console.error('Save customer error:', err);
+        alert('保存出错: ' + err.message);
+    }
 }
 
 /**
