@@ -78,6 +78,56 @@ router.get('/customers/:customerId', async (req, res) => {
 });
 
 /**
+ * 编辑客户信息
+ */
+router.put('/customers/:customerId', async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { name, contactPhone, nickname, deliveryAddress } = req.body;
+
+    // 验证必填字段
+    if (!name || !deliveryAddress) {
+      return res.status(400).json({
+        success: false,
+        message: '客户名和收件地址为必填项'
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('customers')
+      .update({
+        name,
+        contact_phone: contactPhone || null,
+        nickname: nickname || null,
+        delivery_address: deliveryAddress
+      })
+      .eq('id', customerId)
+      .select();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '客户不存在'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: '客户信息已更新',
+      customer: data[0]
+    });
+  } catch (err) {
+    console.error('Update customer error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update customer'
+    });
+  }
+});
+
+/**
  * 获取所有设备
  */
 router.get('/equipment', async (req, res) => {
