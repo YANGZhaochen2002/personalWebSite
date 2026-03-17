@@ -1035,10 +1035,14 @@ async function viewCustomerDetailsModal(customerId) {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         
-        if (data.success && data.data) {
-            const customer = data.data;
+        if (data.success && data.customer) {
+            const customer = data.customer;
             document.getElementById('detailCustomerName').textContent = customer.name || '-';
             document.getElementById('detailCustomerNickname').textContent = customer.nickname || '-';
             document.getElementById('detailCustomerPhone').textContent = customer.contact_phone || '-';
@@ -1054,11 +1058,12 @@ async function viewCustomerDetailsModal(customerId) {
             
             document.getElementById('customerDetailsModal').style.display = 'flex';
         } else {
-            alert('加载客户信息失败');
+            console.error('Customer data response:', data);
+            alert('加载客户信息失败: ' + (data.message || '未知错误'));
         }
     } catch (err) {
         console.error('Load customer details error:', err);
-        alert('加载客户信息出错');
+        alert('加载客户信息出错: ' + err.message);
     }
 }
 
