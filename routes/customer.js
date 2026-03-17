@@ -100,14 +100,50 @@ router.get('/equipment/filters', async (req, res) => {
  */
 router.post('/rental', async (req, res) => {
   try {
-    const { name, contactPhone, nickname, deliveryAddress, equipmentId, rentalStartDate, rentalEndDate } = req.body;
+    const { 
+      name, 
+      contactPhone, 
+      nickname, 
+      transactionType,
+      deliveryAddress,
+      returnAddress,
+      pickupTime,
+      returnPickupTime,
+      equipmentId, 
+      rentalStartDate, 
+      rentalEndDate 
+    } = req.body;
 
     // 验证客户信息
-    if (!name || !deliveryAddress) {
+    if (!name) {
       return res.status(400).json({
         success: false,
-        message: '姓名和收件地址为必填项'
+        message: '客户名为必填项'
       });
+    }
+
+    if (!transactionType || (transactionType !== 'shipping' && transactionType !== 'pickup')) {
+      return res.status(400).json({
+        success: false,
+        message: '订单类型必须是 shipping 或 pickup'
+      });
+    }
+
+    // 根据订单类型进行验证
+    if (transactionType === 'shipping') {
+      if (!deliveryAddress) {
+        return res.status(400).json({
+          success: false,
+          message: '邮寄方式需要提供收货地址'
+        });
+      }
+    } else if (transactionType === 'pickup') {
+      if (!pickupTime || !returnPickupTime) {
+        return res.status(400).json({
+          success: false,
+          message: '自提方式需要提供自提时间和设备归还时间'
+        });
+      }
     }
 
     if (!equipmentId || !rentalStartDate || !rentalEndDate) {
@@ -126,6 +162,18 @@ router.post('/rental', async (req, res) => {
         success: false,
         message: '租期结束日期必须晚于开始日期'
       });
+    }
+
+    // 如果是自提方式，验证自提时间
+    if (transactionType === 'pickup') {
+      const pickup = new Date(pickupTime);
+      const returnTime = new Date(returnPickupTime);
+      if (pickup >= returnTime) {
+        return res.status(400).json({
+          success: false,
+          message: '设备归还时间必须晚于自提时间'
+        });
+      }
     }
 
     // 获取设备信息
@@ -166,13 +214,17 @@ router.post('/rental', async (req, res) => {
     if (existingCustomer && existingCustomer.length > 0) {
       customerId = existingCustomer[0].id;
       // 更新客户信息
+      const updateData = {
+        nickname: nickname || '',
+        updated_at: new Date().toISOString()
+      };
+      // 仅当是邮寄方式时才更新地址
+      if (transactionType === 'shipping') {
+        updateData.delivery_address = deliveryAddress;
+      }
       await supabase
         .from('customers')
-        .update({
-          nickname: nickname || '',
-          delivery_address: deliveryAddress,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', customerId);
     } else {
       // 创建新客户
@@ -182,7 +234,7 @@ router.post('/rental', async (req, res) => {
           name,
           contact_phone: contactPhone || null,
           nickname: nickname || null,
-          delivery_address: deliveryAddress
+          delivery_address: transactionType === 'shipping' ? deliveryAddress : ''
         }])
         .select();
 
@@ -194,17 +246,29 @@ router.post('/rental', async (req, res) => {
     const transactionCode = `RENT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     // 创建交易
+    const transactionData = {
+      transaction_code: transactionCode,
+      customer_id: customerId,
+      equipment_id: equipmentId,
+      rental_start_date: rentalStartDate,
+      rental_end_date: rentalEndDate,
+      total_price: totalPrice,
+      status: 'pending',
+      transaction_type: transactionType
+    };
+
+    // 根据订单类型添加相关字段
+    if (transactionType === 'shipping') {
+      transactionData.delivery_address = deliveryAddress;
+      transactionData.return_address = returnAddress || deliveryAddress;
+    } else if (transactionType === 'pickup') {
+      transactionData.pickup_time = pickupTime;
+      transactionData.return_pickup_time = returnPickupTime;
+    }
+
     const { data: transaction, error: transactionError } = await supabase
       .from('transactions')
-      .insert([{
-        transaction_code: transactionCode,
-        customer_id: customerId,
-        equipment_id: equipmentId,
-        rental_start_date: rentalStartDate,
-        rental_end_date: rentalEndDate,
-        total_price: totalPrice,
-        status: 'pending'
-      }])
+      .insert([transactionData])
       .select();
 
     if (transactionError) throw transactionError;

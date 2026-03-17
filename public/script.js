@@ -260,8 +260,17 @@ function removeFromCart(cartItemId) {
 function displayCart() {
     const cartContainer = document.getElementById('cartItems');
     
+    // 更新购物车徽章
+    const cartBadge = document.getElementById('cartBadge');
+    if (cart.length > 0) {
+        cartBadge.textContent = cart.length;
+        cartBadge.style.display = 'inline-flex';
+    } else {
+        cartBadge.style.display = 'none';
+    }
+    
     if (cart.length === 0) {
-        cartContainer.innerHTML = '<p class="empty-cart">购物车为空，请先添加设备</p>';
+        cartContainer.innerHTML = '<p class="empty-cart">购物车为空</p>';
         document.getElementById('checkoutSection').style.display = 'none';
         return;
     }
@@ -351,6 +360,9 @@ async function handleRentalSubmit(e) {
         return;
     }
     
+    // 获取订单类型
+    const transactionType = document.querySelector('input[name="transactionType"]:checked').value;
+    
     // 检查所有项目是否都有有效的租期
     for (let item of cart) {
         if (!item.startDate || !item.endDate) {
@@ -368,11 +380,39 @@ async function handleRentalSubmit(e) {
     const customerName = document.getElementById('customerName').value;
     const customerPhone = document.getElementById('customerPhone').value || null;
     const customerNickname = document.getElementById('customerNickname').value || null;
-    const deliveryAddress = document.getElementById('deliveryAddress').value;
 
-    if (!customerName || !deliveryAddress) {
-        alert('请填写姓名和收件地址');
+    if (!customerName) {
+        alert('请填写客户名');
         return;
+    }
+
+    // 根据订单类型进行验证和处理
+    let deliveryAddress = null;
+    let returnAddress = null;
+    let pickupTime = null;
+    let returnPickupTime = null;
+
+    if (transactionType === 'shipping') {
+        deliveryAddress = document.getElementById('deliveryAddress').value;
+        returnAddress = document.getElementById('returnAddress').value || deliveryAddress; // 寄回地址默认等于收货地址
+        if (!deliveryAddress) {
+            alert('邮寄方式需要填写收货地址');
+            return;
+        }
+    } else if (transactionType === 'pickup') {
+        pickupTime = document.getElementById('pickupTime').value;
+        returnPickupTime = document.getElementById('returnPickupTime').value;
+        if (!pickupTime || !returnPickupTime) {
+            alert('自提方式需要填写自提时间和设备归还时间');
+            return;
+        }
+        // 验证时间顺序
+        const pickup = new Date(pickupTime);
+        const returnTime = new Date(returnPickupTime);
+        if (pickup >= returnTime) {
+            alert('设备归还时间必须晚于自提时间');
+            return;
+        }
     }
 
     // 准备所有租赁请求
@@ -380,7 +420,11 @@ async function handleRentalSubmit(e) {
         name: customerName,
         contactPhone: customerPhone,
         nickname: customerNickname,
+        transactionType: transactionType,
         deliveryAddress: deliveryAddress,
+        returnAddress: returnAddress,
+        pickupTime: pickupTime,
+        returnPickupTime: returnPickupTime,
         equipmentId: item.id,
         rentalStartDate: item.startDate,
         rentalEndDate: item.endDate
@@ -404,7 +448,7 @@ async function handleRentalSubmit(e) {
                 results.push(data.transactionCode);
                 successCount++;
             } else {
-                alert(`${rentalData.equipmentId} 提交失败: ${data.message}`);
+                alert(`订单提交失败: ${data.message}`);
             }
         }
 
@@ -416,6 +460,7 @@ async function handleRentalSubmit(e) {
             document.getElementById('rentalForm').reset();
             cart = [];
             displayCart();
+            switchCustomerPage('equipment');
             loadEquipment();
         } else {
             alert('所有订单提交失败，请重试');
@@ -427,6 +472,46 @@ async function handleRentalSubmit(e) {
 }
 
 // ==================== 管理员功能 ====================
+
+// ==================== 页面控制函数 ====================
+
+/**
+ * 切换客户端页面（设备列表 <-> 购物车）
+ */
+function switchCustomerPage(page) {
+    if (page === 'equipment') {
+        document.getElementById('equipmentViewPage').style.display = 'block';
+        document.getElementById('cartViewPage').style.display = 'none';
+    } else if (page === 'cart') {
+        document.getElementById('equipmentViewPage').style.display = 'none';
+        document.getElementById('cartViewPage').style.display = 'block';
+    }
+}
+
+/**
+ * 根据订单类型切换显示字段
+ */
+function updateOrderTypeFields() {
+    const transactionType = document.querySelector('input[name="transactionType"]:checked').value;
+    const shippingSection = document.getElementById('shippingSection');
+    const pickupSection = document.getElementById('pickupSection');
+    
+    if (transactionType === 'shipping') {
+        shippingSection.style.display = 'block';
+        pickupSection.style.display = 'none';
+        // 邮寄方式下，地址为必填
+        document.getElementById('deliveryAddress').required = true;
+        document.getElementById('pickupTime').required = false;
+        document.getElementById('returnPickupTime').required = false;
+    } else if (transactionType === 'pickup') {
+        shippingSection.style.display = 'none';
+        pickupSection.style.display = 'block';
+        // 自提方式下，地址不必填
+        document.getElementById('deliveryAddress').required = false;
+        document.getElementById('pickupTime').required = true;
+        document.getElementById('returnPickupTime').required = true;
+    }
+}
 
 /**
  * 切换标签页
@@ -794,15 +879,30 @@ async function loadAdminTransactions(searchQuery = '') {
             const otherTransactions = [];
             
             data.data.forEach(trans => {
-                if (trans.posting_date) {
-                    const postingDate = new Date(trans.posting_date);
-                    postingDate.setHours(0, 0, 0, 0);
-                    
-                    if (postingDate >= today && postingDate < threeDaysLater) {
-                        upcomingTransactions.push(trans);
-                    } else {
-                        otherTransactions.push(trans);
+                let isUpcoming = false;
+                
+                if (trans.transaction_type === 'pickup') {
+                    // 自提订单：根据 pickup_time 判断
+                    if (trans.pickup_time) {
+                        const pickupDate = new Date(trans.pickup_time);
+                        pickupDate.setHours(0, 0, 0, 0);
+                        if (pickupDate >= today && pickupDate < threeDaysLater) {
+                            isUpcoming = true;
+                        }
                     }
+                } else {
+                    // 邮寄订单：根据 posting_date 判断
+                    if (trans.posting_date) {
+                        const postingDate = new Date(trans.posting_date);
+                        postingDate.setHours(0, 0, 0, 0);
+                        if (postingDate >= today && postingDate < threeDaysLater) {
+                            isUpcoming = true;
+                        }
+                    }
+                }
+                
+                if (isUpcoming) {
+                    upcomingTransactions.push(trans);
                 } else {
                     otherTransactions.push(trans);
                 }
@@ -811,14 +911,28 @@ async function loadAdminTransactions(searchQuery = '') {
             // 生成表格行的辅助函数
             const generateTableRow = (trans) => {
                 const cleanedRemarks = (trans.remarks || '').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+                const isPickup = trans.transaction_type === 'pickup';
+                const bgColor = isPickup ? '#fff3e0' : '#e3f2fd';
+                const typeLabel = isPickup ? '自提' : '邮寄';
+                const typeColor = isPickup ? '#ff6f00' : '#1976d2';
+                
+                let additionalInfo = '';
+                if (isPickup) {
+                    additionalInfo = `自提: ${trans.pickup_time || '-'}`;
+                } else {
+                    additionalInfo = `邮寄: ${trans.posting_date || '-'} ${trans.posting_time || ''}`;
+                }
+                
                 return `
-                    <tr>
+                    <tr style="background-color: ${bgColor};">
                         <td><strong>${trans.transaction_code}</strong></td>
                         <td><a href="javascript:viewCustomerDetailsModal(${trans.customers?.id || 'null'})" style="color: #007bff; cursor: pointer; text-decoration: none; font-weight: 600;">${trans.customers?.name || '-'}</a></td>
+                        <td>
+                            <span style="background-color: ${typeColor}; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">${typeLabel}</span>
+                        </td>
                         <td>${trans.equipment?.equipment_code || '-'}</td>
                         <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
-                        <td>${trans.posting_date || '-'}</td>
-                        <td>${trans.posting_time || '-'}</td>
+                        <td style="font-size: 12px; color: #666;">${additionalInfo}</td>
                         <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${trans.remarks || ''}">${trans.remarks || '-'}</td>
                         <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
                         <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
@@ -833,7 +947,7 @@ async function loadAdminTransactions(searchQuery = '') {
             // 填充最近3天的交易表格
             const upcomingTbody = document.querySelector('#upcomingTransactionsTable tbody');
             if (upcomingTransactions.length === 0) {
-                upcomingTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: #999;">暂无最近3天的邮寄</td></tr>';
+                upcomingTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: #999;">暂无最近3天的订单</td></tr>';
             } else {
                 upcomingTbody.innerHTML = upcomingTransactions.map(generateTableRow).join('');
             }
