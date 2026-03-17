@@ -1,7 +1,9 @@
 const API_BASE = '/api';
 let adminToken = localStorage.getItem('adminToken');
-let currentTab = 'customer';
 let cart = []; // 购物车：存储选中的设备
+
+// 检测当前页面是否为管理员页面
+const isAdminPage = window.location.pathname.includes('admin.html');
 
 // 品牌和种类的映射关系
 const categoryBrandMap = {
@@ -16,16 +18,46 @@ const categoryBrandMap = {
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
-    // 如果已登录管理员，直接进入管理员界面
-    if (adminToken) {
-        switchTab('admin');
-        showAdminDashboard();
+    if (isAdminPage) {
+        // 管理员页面初始化
+        initAdminPage();
     } else {
-        // 加载客户端数据
-        loadEquipment();
-        loadFilters();
-        displayCart(); // 初始化购物车显示
+        // 客户页面初始化
+        initCustomerPage();
     }
+});
+
+/**
+ * 初始化管理员页面
+ */
+function initAdminPage() {
+    if (adminToken) {
+        // 显示仪表板
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('adminDashboard').style.display = 'block';
+        loadAdminData();
+        switchAdminTab('equipment');
+    } else {
+        // 显示登录页面
+        document.getElementById('loginView').style.display = 'block';
+        document.getElementById('adminDashboard').style.display = 'none';
+    }
+    
+    // 管理员登录表单
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    if (adminLoginForm) {
+        adminLoginForm.addEventListener('submit', handleAdminLogin);
+    }
+}
+
+/**
+ * 初始化客户页面
+ */
+function initCustomerPage() {
+    // 加载客户端数据
+    loadEquipment();
+    loadFilters();
+    displayCart(); // 初始化购物车显示
 
     // 初始化订单类型
     const defaultTypeRadio = document.querySelector('input[name="transactionType"][value="shipping"]');
@@ -35,10 +67,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 表单提交
-    document.getElementById('rentalForm').addEventListener('submit', handleRentalSubmit);
-    document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
-    document.getElementById('equipmentFormSubmit').addEventListener('submit', handleAddEquipment);
-});
+    const rentalForm = document.getElementById('rentalForm');
+    if (rentalForm) {
+        rentalForm.addEventListener('submit', handleRentalSubmit);
+    }
+    
+    const equipmentFormSubmit = document.getElementById('equipmentFormSubmit');
+    if (equipmentFormSubmit) {
+        equipmentFormSubmit.addEventListener('submit', handleAddEquipment);
+    }
+}
 
 // ==================== 客户功能 ====================
 
@@ -627,23 +665,6 @@ function parseRemarkHighlights(remarksText) {
 }
 
 /**
- * 切换标签页
- */
-function switchTab(tab) {
-    currentTab = tab;
-    document.getElementById('customerView').style.display = tab === 'customer' ? 'block' : 'none';
-    document.getElementById('adminView').style.display = tab === 'admin' ? 'block' : 'none';
-
-    // 更新按钮状态
-    document.getElementById('customerTabBtn').classList.toggle('active', tab === 'customer');
-    document.getElementById('adminTabBtn').classList.toggle('active', tab === 'admin');
-
-    if (tab === 'admin' && adminToken) {
-        loadAdminData();
-    }
-}
-
-/**
  * 管理员登录
  */
 async function handleAdminLogin(e) {
@@ -679,13 +700,31 @@ async function handleAdminLogin(e) {
  * 显示管理员仪表板
  */
 function showAdminDashboard() {
-    switchTab('admin');
-    document.getElementById('adminLoginPanel').style.display = 'none';
+    document.getElementById('loginView').style.display = 'none';
     document.getElementById('adminDashboard').style.display = 'block';
-    document.getElementById('logoutBtn').style.display = 'inline-block';
     loadAdminData();
     // 延迟调用以确保DOM已更新
     setTimeout(() => switchAdminTab('equipment'), 100);
+}
+
+/**
+ * 管理员退出登录
+ */
+function logout() {
+    adminToken = null;
+    localStorage.removeItem('adminToken');
+    document.getElementById('loginView').style.display = 'block';
+    document.getElementById('adminDashboard').style.display = 'none';
+    // 清空登录表单
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    if (adminLoginForm) {
+        adminLoginForm.reset();
+    }
+    // 清空错误消息
+    const errorDiv = document.getElementById('adminLoginError');
+    if (errorDiv) {
+        errorDiv.textContent = '';
+    }
 }
 
 /**
