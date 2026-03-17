@@ -135,6 +135,9 @@ function showOrderSuccessModal(transactionCodes, count) {
     const modal = document.getElementById('successModal');
     const codeDisplay = document.getElementById('transactionCodeDisplay');
     
+    // 存储交易码到模态框数据属性，便于一键复制
+    modal.dataset.transactionCodes = transactionCodes.join('\n');
+    
     let codesHTML = transactionCodes.map(code => `<div class="code-item">${code}</div>`).join('');
     
     codeDisplay.innerHTML = `
@@ -150,6 +153,36 @@ function showOrderSuccessModal(transactionCodes, count) {
         </div>
     `;
     modal.style.display = 'flex';
+}
+
+/**
+ * 一键复制所有交易码
+ */
+function copyAllTransactionCodes() {
+    const modal = document.getElementById('successModal');
+    const codes = modal.dataset.transactionCodes;
+    
+    if (!codes) {
+        alert('没有交易码可复制');
+        return;
+    }
+    
+    // 使用 Clipboard API 复制
+    navigator.clipboard.writeText(codes).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✓ 已复制!';
+        btn.style.backgroundColor = '#4caf50';
+        
+        // 2秒后恢复按钮
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.backgroundColor = '';
+        }, 2000);
+    }).catch(err => {
+        console.error('复制失败:', err);
+        alert('复制失败，请手动复制');
+    });
 }
 
 /**

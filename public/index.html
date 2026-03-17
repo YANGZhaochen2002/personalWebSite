@@ -91,9 +91,9 @@
                         <input type="text" id="customerNickname" placeholder="昵称">
 
                         <div id="shippingSection">
-                            <h4>收货地址</h4>
+                            <h4>收货地址（选填）</h4>
                             <textarea id="deliveryAddress" placeholder="收货地址"></textarea>
-                            <h4>寄回地址（若不填则使用收货地址）</h4>
+                            <h4>寄回地址（选填，若不填则使用收货地址）</h4>
                             <textarea id="returnAddress" placeholder="寄回地址"></textarea>
                         </div>
 
@@ -312,7 +312,10 @@
         <div class="modal-content">
             <h2>✓ 订单提交成功</h2>
             <div id="transactionCodeDisplay"></div>
-            <button class="btn-primary" onclick="closeModal()">关闭</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-primary" onclick="copyAllTransactionCodes()" style="flex: 1; background-color: #2196F3;">📋 一键复制所有交易码</button>
+                <button class="btn-primary" onclick="closeModal()" style="flex: 1;">关闭</button>
+            </div>
         </div>
     </div>
 
