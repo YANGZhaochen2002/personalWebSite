@@ -27,6 +27,13 @@ document.addEventListener('DOMContentLoaded', () => {
         displayCart(); // 初始化购物车显示
     }
 
+    // 初始化订单类型
+    const defaultTypeRadio = document.querySelector('input[name="transactionType"][value="shipping"]');
+    if (defaultTypeRadio) {
+        defaultTypeRadio.checked = true;
+        updateOrderTypeFields();
+    }
+
     // 表单提交
     document.getElementById('rentalForm').addEventListener('submit', handleRentalSubmit);
     document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
@@ -442,6 +449,7 @@ async function handleRentalSubmit(e) {
         let successCount = 0;
         
         for (let rentalData of rentalRequests) {
+            console.log('Submitting rental with data:', rentalData); // 调试：打印完整的请求数据
             const response = await fetch(`${API_BASE}/customer/rental`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
