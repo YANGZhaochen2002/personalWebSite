@@ -360,8 +360,14 @@ async function handleRentalSubmit(e) {
         return;
     }
     
-    // 获取订单类型
-    const transactionType = document.querySelector('input[name="transactionType"]:checked').value;
+    // 获取订单类型 - 确保获取到值
+    const typeRadio = document.querySelector('input[name="transactionType"]:checked');
+    if (!typeRadio) {
+        alert('请选择订单类型');
+        return;
+    }
+    const transactionType = typeRadio.value;
+    console.log('Transaction Type:', transactionType); // 调试
     
     // 检查所有项目是否都有有效的租期
     for (let item of cart) {
@@ -485,6 +491,12 @@ function switchCustomerPage(page) {
     } else if (page === 'cart') {
         document.getElementById('equipmentViewPage').style.display = 'none';
         document.getElementById('cartViewPage').style.display = 'block';
+        // 初始化订单类型表单
+        const typeRadio = document.querySelector('input[name="transactionType"]');
+        if (typeRadio && !document.querySelector('input[name="transactionType"]:checked')) {
+            typeRadio.checked = true;
+            updateOrderTypeFields();
+        }
     }
 }
 

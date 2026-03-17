@@ -114,6 +114,9 @@ router.post('/rental', async (req, res) => {
       rentalEndDate 
     } = req.body;
 
+    console.log('Request body:', req.body); // 调试：打印完整请求体
+    console.log('Transaction Type:', transactionType); // 调试：打印 transactionType
+
     // 验证客户信息
     if (!name) {
       return res.status(400).json({
@@ -123,6 +126,7 @@ router.post('/rental', async (req, res) => {
     }
 
     if (!transactionType || (transactionType !== 'shipping' && transactionType !== 'pickup')) {
+      console.log('Transaction type error - received:', transactionType); // 调试
       return res.status(400).json({
         success: false,
         message: '订单类型必须是 shipping 或 pickup'
