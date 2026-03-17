@@ -1075,6 +1075,32 @@ function closeCustomerDetailsModal() {
 }
 
 /**
+ * 复制客户信息
+ */
+function copyCustomerInfo() {
+    const name = document.getElementById('detailCustomerName').textContent;
+    const phone = document.getElementById('detailCustomerPhone').textContent;
+    const address = document.getElementById('detailCustomerAddress').textContent;
+    
+    // 组织为格式：张三 130302200 北京市朝阳区健翔家园
+    const textToCopy = `${name} ${phone} ${address}`;
+    
+    // 复制到剪贴板
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        // 临时改变按钮文字显示复制成功
+        const copyBtn = event.target;
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✓ 已复制';
+        setTimeout(() => {
+            copyBtn.textContent = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('复制失败:', err);
+        alert('复制失败，请手动复制');
+    });
+}
+
+/**
  * 查看客户详情（占位符）
  */
 function viewCustomerDetails(customerId) {
