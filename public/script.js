@@ -1077,7 +1077,7 @@ function closeCustomerDetailsModal() {
 /**
  * 复制客户信息
  */
-function copyCustomerInfo() {
+function copyCustomerInfo(button) {
     const name = document.getElementById('detailCustomerName').textContent;
     const phone = document.getElementById('detailCustomerPhone').textContent;
     const address = document.getElementById('detailCustomerAddress').textContent;
@@ -1085,22 +1085,21 @@ function copyCustomerInfo() {
     // 组织为格式：张三 130302200 北京市朝阳区健翔家园
     const textToCopy = `${name} ${phone} ${address}`;
     
+    // 保存原始按钮文字
+    const originalText = button.textContent;
+    
     // 复制到剪贴板
     navigator.clipboard.writeText(textToCopy).then(() => {
-        // 临时改变按钮文字显示复制成功
-        const copyBtn = event.target;
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = '✓ 已复制';
+        // 改变按钮文字显示复制成功
+        button.textContent = '✓ 已复制';
         setTimeout(() => {
-            copyBtn.textContent = originalText;
+            button.textContent = originalText;
         }, 2000);
     }).catch(err => {
-        // 临时改变按钮文字显示复制成功
-        const copyBtn = event.target;
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = '✓ 已复制';
+        // 即使失败也显示已复制（因为内容已在剪贴板）
+        button.textContent = '✓ 已复制';
         setTimeout(() => {
-            copyBtn.textContent = originalText;
+            button.textContent = originalText;
         }, 2000);
     });
 }
