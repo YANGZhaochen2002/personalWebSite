@@ -404,24 +404,56 @@
                     <button onclick="document.getElementById('transactionSearchInput').value = ''; loadAdminTransactions()" style="background: #ddd; color: #333;">清空</button>
                 </div>
                 
-                <div class="table-container">
-                    <table id="transactionsTable">
-                        <thead>
-                            <tr>
-                                <th>交易码</th>
-                                <th>客户</th>
-                                <th>类型</th>
-                                <th>设备</th>
-                                <th>时间信息</th>
-                                <th>价格</th>
-                                <th>邮费</th>
-                                <th>状态</th>
-                                <th>负责人</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+                <!-- 最近3天的订单 -->
+                <div style="margin-top: 20px;">
+                    <h4 style="color: #ff6b35; font-weight: 600; margin-bottom: 10px;">📮 最近3天订单</h4>
+                    <div class="table-container">
+                        <table id="upcomingTransactionsTable">
+                            <thead>
+                                <tr>
+                                    <th>交易码</th>
+                                    <th>客户</th>
+                                    <th>类型</th>
+                                    <th>设备</th>
+                                    <th>租期</th>
+                                    <th>时间信息</th>
+                                    <th>备注</th>
+                                    <th>总价格</th>
+                                    <th>邮费</th>
+                                    <th>状态</th>
+                                    <th>负责人</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- 其他交易 -->
+                <div style="margin-top: 20px;">
+                    <h4 style="color: #666; font-weight: 600; margin-bottom: 10px;">📋 其他交易</h4>
+                    <div class="table-container">
+                        <table id="otherTransactionsTable">
+                            <thead>
+                                <tr>
+                                    <th>交易码</th>
+                                    <th>客户</th>
+                                    <th>类型</th>
+                                    <th>设备</th>
+                                    <th>租期</th>
+                                    <th>时间信息</th>
+                                    <th>备注</th>
+                                    <th>总价格</th>
+                                    <th>邮费</th>
+                                    <th>状态</th>
+                                    <th>负责人</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
