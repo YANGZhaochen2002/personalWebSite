@@ -135,6 +135,16 @@
                 <div id="equipmentTab" class="admin-tab-content">
                     <h3>设备列表</h3>
                     <button class="btn-primary" onclick="showAddEquipmentForm()">+ 添加设备</button>
+                    
+                    <!-- 按日期范围筛选设备 -->
+                    <div class="search-section" style="margin-top: 15px;">
+                        <label style="font-weight: 600; align-self: center;">可用日期范围:</label>
+                        <input type="date" id="equipmentFilterStartDate" style="flex: 1;">
+                        <input type="date" id="equipmentFilterEndDate" style="flex: 1;">
+                        <button class="btn-primary" onclick="loadAvailableEquipment()" style="width: auto; padding: 10px 20px;">筛选可用设备</button>
+                        <button class="btn-secondary" onclick="loadAdminEquipment()" style="width: auto; padding: 10px 20px;">显示全部</button>
+                    </div>
+                    
                     <div id="equipmentTableContainer" class="table-container">
                         <table id="equipmentTable">
                             <thead>
@@ -194,12 +204,20 @@
                 <div id="transactionsTab" class="admin-tab-content">
                     <h3>交易列表</h3>
                     
-                    <!-- 搜索框 -->
+                    <!-- 搜索框和排序选项 -->
                     <div class="search-section">
                         <input type="text" id="transactionSearchInput" placeholder="按客户名或交易码搜索..." 
                                onkeyup="if(event.key === 'Enter') searchTransactions()">
                         <button class="btn-primary" onclick="searchTransactions()" style="width: auto; padding: 10px 20px;">搜索</button>
                         <button class="btn-secondary" onclick="document.getElementById('transactionSearchInput').value = ''; loadAdminTransactions();" style="width: auto; padding: 10px 20px;">清空</button>
+                        
+                        <div style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
+                            <label style="font-weight: 600;">排序方式:</label>
+                            <select id="sortBySelect" onchange="loadAdminTransactions()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="created_at">按创建时间</option>
+                                <option value="posting_date">按邮寄时间</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div id="transactionsTableContainer" class="table-container">
@@ -252,6 +270,18 @@
                 <div>
                     <label for="transactionResponsible" style="display: block; margin-bottom: 5px; font-weight: 600;">负责人</label>
                     <input type="text" id="transactionResponsible" placeholder="负责人姓名" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div>
+                    <label for="transactionPostingDate" style="display: block; margin-bottom: 5px; font-weight: 600;">邮寄日期</label>
+                    <input type="date" id="transactionPostingDate" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div>
+                    <label for="transactionPostingTime" style="display: block; margin-bottom: 5px; font-weight: 600;">邮寄时间</label>
+                    <input type="time" id="transactionPostingTime" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div>
+                    <label for="transactionRemarks" style="display: block; margin-bottom: 5px; font-weight: 600;">备注</label>
+                    <textarea id="transactionRemarks" placeholder="输入备注" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: vertical; min-height: 80px;"></textarea>
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button type="button" class="btn-primary" onclick="saveTransactionChanges()" style="flex: 1;">保存</button>

@@ -573,6 +573,43 @@ async function loadAdminEquipment() {
 }
 
 /**
+ * 按日期范围加载可用设备
+ */
+async function loadAvailableEquipment() {
+    try {
+        const startDate = document.getElementById('equipmentFilterStartDate')?.value;
+        const endDate = document.getElementById('equipmentFilterEndDate')?.value;
+        
+        if (!startDate || !endDate) {
+            alert('请选择日期范围');
+            return;
+        }
+        
+        if (startDate > endDate) {
+            alert('开始日期不能晚于结束日期');
+            return;
+        }
+        
+        const response = await fetch(
+            `${API_BASE}/admin/equipment/available-in-range?startDate=${startDate}&endDate=${endDate}`,
+            {
+                headers: { 'Authorization': `Bearer ${adminToken}` }
+            }
+        );
+
+        const data = await response.json();
+        if (data.success) {
+            displayAdminEquipmentTable(data.data);
+        } else {
+            alert(data.message || '筛选失败');
+        }
+    } catch (err) {
+        console.error('Load available equipment error:', err);
+        alert('筛选出错');
+    }
+}
+
+/**
  * 显示设备表格
  */
 function displayAdminEquipmentTable(equipment) {
@@ -731,9 +768,12 @@ async function loadAdminTransactions(searchQuery = '') {
     try {
         if (!adminToken) return;
         
-        let url = `${API_BASE}/admin/transactions`;
+        const sortBySelect = document.getElementById('sortBySelect');
+        const sortBy = sortBySelect?.value || 'created_at';
+        
+        let url = `${API_BASE}/admin/transactions?sortBy=${sortBy}`;
         if (searchQuery) {
-            url += `?search=${encodeURIComponent(searchQuery)}`;
+            url += `&search=${encodeURIComponent(searchQuery)}`;
         }
         
         const response = await fetch(url, {
@@ -747,20 +787,23 @@ async function loadAdminTransactions(searchQuery = '') {
             if (data.data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: #999;">暂无交易数据</td></tr>';
             } else {
-                const html = data.data.map(trans => `
-                    <tr>
-                        <td><strong>${trans.transaction_code}</strong></td>
-                        <td>${trans.customers?.name || '-'}</td>
-                        <td>${trans.equipment?.equipment_code || '-'}</td>
-                        <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
-                        <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
-                        <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
-                        <td>${trans.responsible_person || '-'}</td>
-                        <td>
-                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}')">编辑</button>
-                        </td>
-                    </tr>
-                `).join('');
+                const html = data.data.map(trans => {
+                    const highlightClass = trans.highlightPostingDate ? 'highlight-posting-date' : '';
+                    return `
+                        <tr class="${highlightClass}">
+                            <td><strong>${trans.transaction_code}</strong></td>
+                            <td>${trans.customers?.name || '-'}</td>
+                            <td>${trans.equipment?.equipment_code || '-'}</td>
+                            <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
+                            <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
+                            <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
+                            <td>${trans.responsible_person || '-'}</td>
+                            <td>
+                                <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}', '${trans.posting_date || ''}', '${trans.posting_time || ''}', '${(trans.remarks || '').replace(/'/g, "\\'")}')">编辑</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
                 tbody.innerHTML = html;
             }
         } else {
@@ -785,7 +828,7 @@ function searchTransactions() {
 /**
  * 打开编辑交易模态框
  */
-function openEditTransactionModal(transactionId, currentStatus, currentResponsible) {
+function openEditTransactionModal(transactionId, currentStatus, currentResponsible, currentPostingDate, currentPostingTime, currentRemarks) {
     const modal = document.getElementById('editTransactionModal');
     if (!modal) {
         console.error('Transaction edit modal not found');
@@ -798,12 +841,24 @@ function openEditTransactionModal(transactionId, currentStatus, currentResponsib
     // 设置当前值
     const statusSelect = document.getElementById('transactionStatus');
     const responsibleInput = document.getElementById('transactionResponsible');
+    const postingDateInput = document.getElementById('transactionPostingDate');
+    const postingTimeInput = document.getElementById('transactionPostingTime');
+    const remarksInput = document.getElementById('transactionRemarks');
     
     if (statusSelect) {
         statusSelect.value = currentStatus || 'pending';
     }
     if (responsibleInput) {
         responsibleInput.value = currentResponsible || '';
+    }
+    if (postingDateInput) {
+        postingDateInput.value = currentPostingDate || '';
+    }
+    if (postingTimeInput) {
+        postingTimeInput.value = currentPostingTime || '';
+    }
+    if (remarksInput) {
+        remarksInput.value = currentRemarks || '';
     }
     
     modal.style.display = 'flex';
@@ -831,9 +886,15 @@ async function saveTransactionChanges() {
     const transactionId = modal.dataset.transactionId;
     const statusSelect = document.getElementById('transactionStatus');
     const responsibleInput = document.getElementById('transactionResponsible');
+    const postingDateInput = document.getElementById('transactionPostingDate');
+    const postingTimeInput = document.getElementById('transactionPostingTime');
+    const remarksInput = document.getElementById('transactionRemarks');
     
     const status = statusSelect?.value;
     const responsiblePerson = responsibleInput?.value || null;
+    const postingDate = postingDateInput?.value || null;
+    const postingTime = postingTimeInput?.value || null;
+    const remarks = remarksInput?.value || null;
     
     if (!status || !transactionId) {
         return;
@@ -848,7 +909,10 @@ async function saveTransactionChanges() {
             },
             body: JSON.stringify({
                 status,
-                responsiblePerson
+                responsiblePerson,
+                postingDate,
+                postingTime,
+                remarks
             })
         });
         

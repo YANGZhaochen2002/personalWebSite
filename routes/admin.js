@@ -103,6 +103,64 @@ router.get('/equipment', async (req, res) => {
 });
 
 /**
+ * 按使用日期范围筛选可用设备
+ * 查询参数: startDate, endDate (YYYY-MM-DD)
+ */
+router.get('/equipment/available-in-range', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: '开始日期和结束日期为必填项'
+      });
+    }
+
+    // 获取所有设备及其当前状态
+    const { data: allEquipment, error: equipmentError } = await supabase
+      .from('equipment')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (equipmentError) throw equipmentError;
+
+    // 过滤出在指定日期范围内可用的设备
+    const availableEquipment = allEquipment.filter(equipment => {
+      // 如果设备当前in_stock为true，说明它可用
+      if (equipment.in_stock) {
+        return true;
+      }
+
+      // 如果设备有checkout_date和return_date，检查是否与请求的日期范围冲突
+      if (equipment.checkout_date && equipment.return_date) {
+        // 如果请求的日期范围完全在设备使用期后，设备可用
+        if (startDate > equipment.return_date) {
+          return true;
+        }
+        // 如果请求的日期范围完全在设备使用期前，设备可用
+        if (endDate < equipment.checkout_date) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+
+    res.json({
+      success: true,
+      data: availableEquipment
+    });
+  } catch (err) {
+    console.error('Get available equipment error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get available equipment'
+    });
+  }
+});
+
+/**
  * 添加新设备
  */
 router.post('/equipment', async (req, res) => {
@@ -243,7 +301,7 @@ router.delete('/equipment/:equipmentId', async (req, res) => {
  */
 router.get('/transactions', async (req, res) => {
   try {
-    const { status, search } = req.query;
+    const { status, search, sortBy, startDate, endDate } = req.query;
 
     let query = supabase
       .from('transactions')
@@ -257,25 +315,74 @@ router.get('/transactions', async (req, res) => {
       query = query.eq('status', status);
     }
 
-    let { data, error } = await query.order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    // 在前端进行搜索过滤（通过客户名或交易码）
-    if (search) {
-      const searchLower = search.toLowerCase();
-      data = data.filter(transaction => {
-        return (
-          transaction.transaction_code?.toLowerCase().includes(searchLower) ||
-          transaction.customers?.name?.toLowerCase().includes(searchLower)
-        );
-      });
+    // 按邮寄日期筛选（如果提供了日期范围）
+    if (startDate) {
+      query = query.gte('posting_date', startDate);
+    }
+    if (endDate) {
+      query = query.lte('posting_date', endDate);
     }
 
-    res.json({
-      success: true,
-      data: data || []
-    });
+    // 排序：默认按created_at，如果指定sortBy='posting_date'则按posting_date排序
+    if (sortBy === 'posting_date') {
+      let { data, error } = await query.order('posting_date', { ascending: false, nullsFirst: false });
+      if (error) throw error;
+
+      // 在前端进行搜索过滤（通过客户名或交易码）
+      if (search) {
+        const searchLower = search.toLowerCase();
+        data = data.filter(transaction => {
+          return (
+            transaction.transaction_code?.toLowerCase().includes(searchLower) ||
+            transaction.customers?.name?.toLowerCase().includes(searchLower)
+          );
+        });
+      }
+
+      // 高亮近三天的邮寄：在response中添加标记
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const threeDaysLater = new Date(today);
+      threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+
+      data = data.map(transaction => {
+        let highlightPostingDate = false;
+        if (transaction.posting_date) {
+          const postingDate = new Date(transaction.posting_date);
+          postingDate.setHours(0, 0, 0, 0);
+          highlightPostingDate = postingDate >= today && postingDate < threeDaysLater;
+        }
+        return {
+          ...transaction,
+          highlightPostingDate
+        };
+      });
+
+      res.json({
+        success: true,
+        data: data || []
+      });
+    } else {
+      let { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // 在前端进行搜索过滤（通过客户名或交易码）
+      if (search) {
+        const searchLower = search.toLowerCase();
+        data = data.filter(transaction => {
+          return (
+            transaction.transaction_code?.toLowerCase().includes(searchLower) ||
+            transaction.customers?.name?.toLowerCase().includes(searchLower)
+          );
+        });
+      }
+
+      res.json({
+        success: true,
+        data: data || []
+      });
+    }
   } catch (err) {
     console.error('Get transactions error:', err);
     res.status(500).json({
@@ -323,17 +430,17 @@ router.get('/transactions/:transactionId', async (req, res) => {
 });
 
 /**
- * 更新交易状态和负责人
+ * 更新交易状态、负责人、邮寄信息等
  */
 router.put('/transactions/:transactionId', async (req, res) => {
   try {
     const { transactionId } = req.params;
-    const { status, responsiblePerson } = req.body;
+    const { status, responsiblePerson, postingDate, postingTime, remarks } = req.body;
 
-    // 首先获取交易信息以获取equipment_id和旧状态
+    // 首先获取交易信息以获取equipment_id、旧状态和rental_end_date
     const { data: transaction, error: fetchError } = await supabase
       .from('transactions')
-      .select('equipment_id, status')
+      .select('equipment_id, status, rental_end_date')
       .eq('id', transactionId)
       .single();
 
@@ -385,21 +492,44 @@ router.put('/transactions/:transactionId', async (req, res) => {
       }
 
       // 如果需要更新设备库存，执行更新
+      let equipmentUpdate = { in_stock: inStock };
+      
+      // 如果提供了邮寄日期，则更新设备的离库日期
+      if (postingDate) {
+        equipmentUpdate.checkout_date = postingDate;
+      }
+      
+      // 设置回库日期为租期结束日期
+      if (transaction.rental_end_date) {
+        equipmentUpdate.return_date = transaction.rental_end_date;
+      }
+      
       if (shouldUpdateEquipment) {
         await supabase
           .from('equipment')
-          .update({ in_stock: inStock })
+          .update(equipmentUpdate)
+          .eq('id', transaction.equipment_id);
+      } else if (postingDate || transaction.rental_end_date) {
+        // 即使不需要更新库存，也可能需要更新日期字段
+        await supabase
+          .from('equipment')
+          .update(equipmentUpdate)
           .eq('id', transaction.equipment_id);
       }
     }
 
+    // 构建更新对象
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (responsiblePerson !== undefined) updateData.responsible_person = responsiblePerson;
+    if (postingDate !== undefined) updateData.posting_date = postingDate;
+    if (postingTime !== undefined) updateData.posting_time = postingTime;
+    if (remarks !== undefined) updateData.remarks = remarks;
+
     // 更新交易
     const { data, error } = await supabase
       .from('transactions')
-      .update({
-        status: status || undefined,
-        responsible_person: responsiblePerson || undefined
-      })
+      .update(updateData)
       .eq('id', transactionId)
       .select();
 

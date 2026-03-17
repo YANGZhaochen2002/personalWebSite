@@ -33,6 +33,8 @@ CREATE TABLE equipment (
   daily_rental_price DECIMAL(10, 2) NOT NULL,
   damage_price DECIMAL(10, 2) NOT NULL,
   in_stock BOOLEAN DEFAULT TRUE,
+  checkout_date DATE,
+  return_date DATE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -41,6 +43,8 @@ CREATE INDEX idx_equipment_brand ON equipment(brand);
 CREATE INDEX idx_equipment_category ON equipment(category);
 CREATE INDEX idx_equipment_in_stock ON equipment(in_stock);
 CREATE INDEX idx_equipment_code ON equipment(equipment_code);
+CREATE INDEX idx_equipment_checkout_date ON equipment(checkout_date);
+CREATE INDEX idx_equipment_return_date ON equipment(return_date);
 
 -- 交易表
 DROP TABLE IF EXISTS transactions CASCADE;
@@ -54,6 +58,9 @@ CREATE TABLE transactions (
   total_price DECIMAL(10, 2) NOT NULL,
   responsible_person VARCHAR(255),
   status VARCHAR(50) DEFAULT 'pending',
+  posting_date DATE,
+  posting_time TIME,
+  remarks TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -62,6 +69,7 @@ CREATE INDEX idx_transactions_code ON transactions(transaction_code);
 CREATE INDEX idx_transactions_customer ON transactions(customer_id);
 CREATE INDEX idx_transactions_equipment ON transactions(equipment_id);
 CREATE INDEX idx_transactions_status ON transactions(status);
+CREATE INDEX idx_transactions_posting_date ON transactions(posting_date);
 
 -- 自动更新updated_at的触发器
 CREATE OR REPLACE FUNCTION update_timestamp()

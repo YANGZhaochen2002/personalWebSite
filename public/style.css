@@ -669,3 +669,18 @@ table tr:hover {
         width: 100%;
     }
 }
+
+/* 高亮近三天的邮寄 */
+.highlight-posting-date {
+    background: #fff3cd !important;
+    box-shadow: inset 0 0 0 2px #ffc107;
+}
+
+.highlight-posting-date td {
+    background: #fffbf0;
+}
+
+.highlight-posting-date td:first-child {
+    background: #fff3cd;
+    font-weight: 600;
+}
