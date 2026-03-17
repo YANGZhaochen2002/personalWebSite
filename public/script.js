@@ -1085,60 +1085,20 @@ function copyCustomerInfo() {
     // 组织为格式：张三 130302200 北京市朝阳区健翔家园
     const textToCopy = `${name} ${phone} ${address}`;
     
-    // 方案1：使用现代 Clipboard API
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            showCopySuccess();
-        }).catch(err => {
-            console.warn('Clipboard API 失败，使用备选方案:', err);
-            copyToClipboardFallback(textToCopy);
-        });
-    } else {
-        // 方案2：使用传统方法（兼容旧浏览器）
-        copyToClipboardFallback(textToCopy);
-    }
-}
-
-/**
- * 复制到剪贴板 - 备选方案
- */
-function copyToClipboardFallback(text) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    
-    try {
-        textArea.focus();
-        textArea.select();
-        const successful = document.execCommand('copy');
-        if (successful) {
-            showCopySuccess();
-        } else {
-            alert('复制失败，请手动复制：\n\n' + text);
-        }
-    } catch (err) {
+    // 复制到剪贴板
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        // 临时改变按钮文字显示复制成功
+        const copyBtn = event.target;
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✓ 已复制';
+        setTimeout(() => {
+            copyBtn.textContent = originalText;
+        }, 2000);
+    }).catch(err => {
         console.error('复制失败:', err);
-        alert('复制失败，请手动复制：\n\n' + text);
-    } finally {
-        document.body.removeChild(textArea);
-    }
+        alert('复制失败，请手动复制');
+    });
 }
-
-/**
- * 显示复制成功提示
- */
-function showCopySuccess() {
-    const copyBtn = event.target;
-    const originalText = copyBtn.textContent;
-    copyBtn.textContent = '✓ 已复制';
-    copyBtn.style.backgroundColor = '#28a745';
-    setTimeout(() => {
-        copyBtn.textContent = originalText;
-        copyBtn.style.backgroundColor = '';
-    }, 2000);
 
 /**
  * 查看客户详情（占位符）
