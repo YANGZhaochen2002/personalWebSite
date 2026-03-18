@@ -1042,6 +1042,9 @@ async function loadAdminTransactions(searchQuery = '', responsiblePerson = '') {
         const data = await response.json();
         
         if (data.success && data.data) {
+            // 排除已完成的交易（已完成订单在单独的标签页中显示）
+            let transactions = data.data.filter(trans => trans.status !== 'completed');
+            
             // 分离最近3天的交易和其他交易
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -1051,7 +1054,7 @@ async function loadAdminTransactions(searchQuery = '', responsiblePerson = '') {
             const upcomingTransactions = [];
             const otherTransactions = [];
             
-            data.data.forEach(trans => {
+            transactions.forEach(trans => {
                 let isUpcoming = false;
                 
                 if (trans.transaction_type === 'pickup') {
