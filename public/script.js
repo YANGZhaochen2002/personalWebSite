@@ -1364,8 +1364,8 @@ async function loadAdminTransactions(searchQuery = '', responsiblePerson = '') {
                 }
             });
             
-            // 生成表格行的辅助函数
-            const generateTableRow = (trans) => {
+            // 生成表格行的辅助函数 - 用于最近3天的交易（12列）
+            const generateUpcomingTableRow = (trans) => {
                 const cleanedRemarks = (trans.remarks || '').replace(/'/g, "\\'").replace(/\n/g, '\\n');
                 const isPickup = trans.transaction_type === 'pickup';
                 const bgColor = isPickup ? '#fff3e0' : '#e3f2fd';
@@ -1401,12 +1401,50 @@ async function loadAdminTransactions(searchQuery = '', responsiblePerson = '') {
                 `;
             };
             
+            // 生成表格行的辅助函数 - 用于其他交易（13列，包含入库时间）
+            const generateOtherTableRow = (trans) => {
+                const cleanedRemarks = (trans.remarks || '').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+                const isPickup = trans.transaction_type === 'pickup';
+                const bgColor = isPickup ? '#fff3e0' : '#e3f2fd';
+                const typeLabel = isPickup ? '自提' : '邮寄';
+                const typeColor = isPickup ? '#ff6f00' : '#1976d2';
+                
+                let additionalInfo = '';
+                if (isPickup) {
+                    additionalInfo = `自提: ${trans.pickup_time || '-'}`;
+                } else {
+                    additionalInfo = `邮寄: ${trans.posting_date || '-'} ${trans.posting_time || ''}`;
+                }
+                
+                return `
+                    <tr style="background-color: ${bgColor};">
+                        <td><strong>${trans.transaction_code}</strong></td>
+                        <td><a href="javascript:viewCustomerDetailsModal(${trans.customers?.id || 'null'})" style="color: #007bff; cursor: pointer; text-decoration: none; font-weight: 600;">${trans.customers?.name || '-'}</a></td>
+                        <td>
+                            <span style="background-color: ${typeColor}; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">${typeLabel}</span>
+                        </td>
+                        <td>${trans.equipment?.equipment_code || '-'}</td>
+                        <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
+                        <td style="font-size: 12px; color: #666;">${additionalInfo}</td>
+                        <td style="max-width: 150px; word-break: break-word;" title="${trans.remarks || ''}">${parseRemarkHighlights(trans.remarks) || '-'}</td>
+                        <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
+                        <td>¥${parseFloat(trans.shipping_cost || 0).toFixed(2)}</td>
+                        <td>${trans.admin_return_date || '-'}</td>
+                        <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
+                        <td>${trans.responsible_person || '-'}</td>
+                        <td>
+                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id})">编辑</button>
+                        </td>
+                    </tr>
+                `;
+            };
+            
             // 填充最近3天的交易表格
             const upcomingTbody = document.querySelector('#upcomingTransactionsTable tbody');
             if (upcomingTransactions.length === 0) {
-                upcomingTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: #999;">暂无最近3天的订单</td></tr>';
+                upcomingTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color: #999;">暂无最近3天的订单</td></tr>';
             } else {
-                upcomingTbody.innerHTML = upcomingTransactions.map(generateTableRow).join('');
+                upcomingTbody.innerHTML = upcomingTransactions.map(generateUpcomingTableRow).join('');
             }
             
             // 填充其他交易表格
@@ -1414,7 +1452,7 @@ async function loadAdminTransactions(searchQuery = '', responsiblePerson = '') {
             if (otherTransactions.length === 0) {
                 otherTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: #999;">暂无其他交易</td></tr>';
             } else {
-                otherTbody.innerHTML = otherTransactions.map(generateTableRow).join('');
+                otherTbody.innerHTML = otherTransactions.map(generateOtherTableRow).join('');
             }
         } else {
             const upcomingTbody = document.querySelector('#upcomingTransactionsTable tbody');
