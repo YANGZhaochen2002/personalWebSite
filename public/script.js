@@ -945,15 +945,28 @@ async function viewEquipmentRentalCalendar(equipmentId) {
             return;
         }
 
-        // 获取该设备的所有未完成订单
-        const url = `${API_BASE}/admin/transactions?status=pending,confirmed,shipped,returned`;
+        // 获取该设备的所有订单（不限制status）
+        const url = `${API_BASE}/admin/transactions`;
         const transResponse = await fetch(url, {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
 
         const transData = await transResponse.json();
+        
+        // 前端过滤：按设备ID和排除已完成/已取消的订单
         const relevantTransactions = (transData.data || [])
-            .filter(trans => trans.equipment_id === equipmentId && trans.status !== 'completed' && trans.status !== 'cancelled');
+            .filter(trans => {
+                // 检查equipment_id是否匹配（支持直接字段和equipment对象）
+                const equipmentId_value = trans.equipment_id || (trans.equipment?.id);
+                const equipmentMatch = equipmentId_value === equipmentId;
+                // 排除已完成和已取消的订单
+                const notCompleted = trans.status !== 'completed' && trans.status !== 'cancelled';
+                return equipmentMatch && notCompleted;
+            });
+
+        console.log('Relevant transactions:', relevantTransactions);
+        console.log('Equipment ID:', equipmentId);
+        console.log('All transactions:', transData.data);
 
         // 更新模态框信息
         document.getElementById('rentalEquipmentCode').textContent = equipment.equipment_code;
