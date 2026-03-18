@@ -556,7 +556,7 @@ router.get('/transactions/:transactionId', async (req, res) => {
 router.put('/transactions/:transactionId', async (req, res) => {
   try {
     const { transactionId } = req.params;
-    const { status, responsiblePerson, postingDate, postingTime, remarks, shippingCost, rentalStartDate, rentalEndDate, rentalPrice, returnDate } = req.body;
+    const { status, responsiblePerson, postingDate, postingTime, remarks, shippingCost, rentalStartDate, rentalEndDate, rentalPrice, adminReturnDate } = req.body;
 
     // 首先获取交易信息以获取equipment_id、旧状态和rental_end_date
     const { data: transaction, error: fetchError } = await supabase
@@ -650,7 +650,7 @@ router.put('/transactions/:transactionId', async (req, res) => {
     if (rentalStartDate !== undefined) updateData.rental_start_date = rentalStartDate;
     if (rentalEndDate !== undefined) updateData.rental_end_date = rentalEndDate;
     if (rentalPrice !== undefined) updateData.rental_price = rentalPrice;
-    if (returnDate !== undefined) updateData.return_date = returnDate;
+    if (adminReturnDate !== undefined) updateData.admin_return_date = adminReturnDate;
 
     // 更新交易
     const { data, error } = await supabase
