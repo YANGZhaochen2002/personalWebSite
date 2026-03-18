@@ -1043,6 +1043,7 @@ function generateMonthCalendar(year, month, transactions) {
             } else if (dayCount > daysInMonth) {
                 calendarHTML += `<td style="height: 40px; border: 1px solid #eee;"></td>`;
             } else {
+                const date = new Date(year, month, dayCount);
                 const dateStr = formatDate(date);
                 const dayTransactions = transactions.filter(trans => {
                     const rentalStart = new Date(trans.rental_start_date);
@@ -1064,9 +1065,9 @@ function generateMonthCalendar(year, month, transactions) {
                 let cellContent = `<div style="height: 40px; padding: 2px; overflow: hidden; font-size: 11px;">${dayCount}`;
 
                 if (dayTransactions.length > 0) {
-                    // 如果有多种类型的事件，使用混合颜色
-                    const hasPickup = dayTransactions.some(t => t.transaction_type === 'pickup' && t.pickup_time && formatDate(new Date(t.pickup_time)) === dateStr);
-                    const hasPosting = dayTransactions.some(t => t.transaction_type === 'shipping' && t.posting_date && formatDate(new Date(t.posting_date)) === dateStr);
+                    // 确定优先级：邮寄日期 > 自提日期 > 回库日期 > 租期内
+                    const hasPosting = dayTransactions.some(t => t.posting_date && formatDate(new Date(t.posting_date)) === dateStr);
+                    const hasPickup = dayTransactions.some(t => t.pickup_time && formatDate(new Date(t.pickup_time)) === dateStr);
                     const hasAdminReturnDate = dayTransactions.some(t => t.admin_return_date && formatDate(new Date(t.admin_return_date)) === dateStr);
                     const inRental = dayTransactions.filter(t => {
                         const rentalStart = new Date(t.rental_start_date);
@@ -1074,23 +1075,19 @@ function generateMonthCalendar(year, month, transactions) {
                         return date >= rentalStart && date <= rentalEnd;
                     }).length > 0;
 
-                    if (hasPickup) {
-                        cellBgColor = '#ff9800'; // 橙色 - 自提
-                    } else if (hasPosting) {
+                    // 优先级设置：邮寄(蓝色) > 自提(橙色) > 回库(深红色) > 租期(浅绿色)
+                    if (hasPosting) {
                         cellBgColor = '#2196f3'; // 蓝色 - 邮寄
+                        cellContent += `<br><span style="color: white; font-weight: bold; font-size: 10px;">邮寄</span>`;
+                    } else if (hasPickup) {
+                        cellBgColor = '#ff9800'; // 橙色 - 自提
+                        cellContent += `<br><span style="color: white; font-weight: bold; font-size: 10px;">自提</span>`;
                     } else if (hasAdminReturnDate) {
                         cellBgColor = '#ff5722'; // 深红色 - 回库
+                        cellContent += `<br><span style="color: white; font-weight: bold; font-size: 10px;">回库</span>`;
                     } else if (inRental) {
-                        cellBgColor = '#e8f5e9'; // 浅绿色 - 租期中
-                    }
-
-                    // 添加提示
-                    const labels = [];
-                    if (hasPickup) labels.push('自提');
-                    if (hasPosting) labels.push('邮寄');
-                    if (hasAdminReturnDate) labels.push('回库');
-                    if (labels.length > 0) {
-                        cellContent += `<br><span style="color: white; font-weight: bold; font-size: 10px;">${labels.join('/')}</span>`;
+                        cellBgColor = '#4caf50'; // 绿色 - 租期中
+                        cellContent += `<br><span style="color: white; font-weight: bold; font-size: 10px;">租期</span>`;
                     }
                 }
 
