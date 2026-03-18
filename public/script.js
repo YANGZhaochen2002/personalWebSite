@@ -1404,7 +1404,7 @@ async function loadAdminTransactions(searchQuery = '', responsiblePerson = '') {
             // 填充最近3天的交易表格
             const upcomingTbody = document.querySelector('#upcomingTransactionsTable tbody');
             if (upcomingTransactions.length === 0) {
-                upcomingTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: #999;">暂无最近3天的订单</td></tr>';
+                upcomingTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: #999;">暂无最近3天的订单</td></tr>';
             } else {
                 upcomingTbody.innerHTML = upcomingTransactions.map(generateTableRow).join('');
             }
@@ -1412,22 +1412,22 @@ async function loadAdminTransactions(searchQuery = '', responsiblePerson = '') {
             // 填充其他交易表格
             const otherTbody = document.querySelector('#otherTransactionsTable tbody');
             if (otherTransactions.length === 0) {
-                otherTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: #999;">暂无其他交易</td></tr>';
+                otherTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: #999;">暂无其他交易</td></tr>';
             } else {
                 otherTbody.innerHTML = otherTransactions.map(generateTableRow).join('');
             }
         } else {
             const upcomingTbody = document.querySelector('#upcomingTransactionsTable tbody');
             const otherTbody = document.querySelector('#otherTransactionsTable tbody');
-            upcomingTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: red;">加载失败</td></tr>';
-            otherTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: red;">加载失败</td></tr>';
+            upcomingTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: red;">加载失败</td></tr>';
+            otherTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: red;">加载失败</td></tr>';
         }
     } catch (err) {
         console.error('Load transactions error:', err);
         const upcomingTbody = document.querySelector('#upcomingTransactionsTable tbody');
         const otherTbody = document.querySelector('#otherTransactionsTable tbody');
-        upcomingTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: red;">加载出错</td></tr>';
-        otherTbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color: red;">加载出错</td></tr>';
+        upcomingTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: red;">加载出错</td></tr>';
+        otherTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: red;">加载出错</td></tr>';
     }
 }
 
@@ -1492,6 +1492,7 @@ async function loadCompletedTransactions(searchQuery = '', responsiblePerson = '
                         <td style="max-width: 150px; word-break: break-word;" title="${trans.remarks || ''}">${parseRemarkHighlights(trans.remarks) || '-'}</td>
                         <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
                         <td>¥${parseFloat(trans.shipping_cost || 0).toFixed(2)}</td>
+                        <td>${trans.admin_return_date || '-'}</td>
                         <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
                         <td>${trans.responsible_person || '-'}</td>
                         <td>
@@ -1504,18 +1505,18 @@ async function loadCompletedTransactions(searchQuery = '', responsiblePerson = '
             // 填充已完成交易表格
             const completedTbody = document.querySelector('#completedTransactionsTable tbody');
             if (data.data.length === 0) {
-                completedTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color: #999;">暂无已完成订单</td></tr>';
+                completedTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: #999;">暂无已完成订单</td></tr>';
             } else {
                 completedTbody.innerHTML = data.data.map(generateTableRow).join('');
             }
         } else {
             const completedTbody = document.querySelector('#completedTransactionsTable tbody');
-            completedTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color: red;">加载失败</td></tr>';
+            completedTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: red;">加载失败</td></tr>';
         }
     } catch (err) {
         console.error('Load completed transactions error:', err);
         const completedTbody = document.querySelector('#completedTransactionsTable tbody');
-        completedTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color: red;">加载出错</td></tr>';
+        completedTbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color: red;">加载出错</td></tr>';
     }
 }
 
