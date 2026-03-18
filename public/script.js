@@ -614,13 +614,15 @@ function updateOrderTypeFields() {
  */
 function addRemarkHighlight(color) {
     const textarea = document.getElementById('transactionRemarks');
-    if (!textarea.selectionStart && !textarea.selectionEnd) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    
+    // 检查是否选中了文本
+    if (start === end) {
         alert('请先选中要高亮的文本');
         return;
     }
     
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
     const selectedText = textarea.value.substring(start, end);
     const before = textarea.value.substring(0, start);
     const after = textarea.value.substring(end);

@@ -598,6 +598,13 @@
                 <div class="form-group">
                     <label>备注</label>
                     <textarea id="transactionRemarks" style="min-height: 80px; resize: vertical;"></textarea>
+                    <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <small style="width: 100%; color: #666; font-weight: 600;">快速高亮（选中文本后点击）：</small>
+                        <button type="button" onclick="addRemarkHighlight('yellow')" style="padding: 8px 12px; font-size: 13px; background-color: #ffeb3b; color: #333; border: 1px solid #fbc02d; border-radius: 4px; cursor: pointer; font-weight: 600;">🟨 黄色</button>
+                        <button type="button" onclick="addRemarkHighlight('red')" style="padding: 8px 12px; font-size: 13px; background-color: #ff4444; color: white; border: 1px solid #d32f2f; border-radius: 4px; cursor: pointer; font-weight: 600;">🟥 红色</button>
+                        <button type="button" onclick="addRemarkHighlight('cyan')" style="padding: 8px 12px; font-size: 13px; background-color: #00bcd4; color: white; border: 1px solid #0097a7; border-radius: 4px; cursor: pointer; font-weight: 600;">🟦 青色</button>
+                        <button type="button" onclick="addRemarkHighlight('green')" style="padding: 8px 12px; font-size: 13px; background-color: #4caf50; color: white; border: 1px solid #388e3c; border-radius: 4px; cursor: pointer; font-weight: 600;">🟩 绿色</button>
+                    </div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-primary" onclick="saveTransactionChanges()">保存</button>
