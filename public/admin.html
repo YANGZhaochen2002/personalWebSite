@@ -680,20 +680,18 @@
                         <option value="温顿">温顿</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>邮寄日期</label>
-                    <input type="date" id="transactionPostingDate">
-                </div>
-                <div class="form-group">
-                    <label>邮寄时间</label>
-                    <input type="time" id="transactionPostingTime">
-                </div>
-                <div class="form-group">
-                    <label>邮费 (¥)</label>
-                    <input type="number" id="transactionShippingCost" step="0.01" min="0">
-                </div>
+                
+                <!-- 时间信息分组 -->
                 <div style="border-top: 1px solid #ddd; margin: 15px 0; padding-top: 15px;">
-                    <h4 style="margin: 0 0 15px 0; color: #333;">租期信息</h4>
+                    <h4 style="margin: 0 0 15px 0; color: #333;">时间信息</h4>
+                    <div class="form-group">
+                        <label>邮寄日期</label>
+                        <input type="date" id="transactionPostingDate">
+                    </div>
+                    <div class="form-group">
+                        <label>邮寄时间</label>
+                        <input type="time" id="transactionPostingTime">
+                    </div>
                     <div class="form-group">
                         <label>租期开始日期</label>
                         <input type="date" id="transactionRentalStartDate">
@@ -703,14 +701,25 @@
                         <input type="date" id="transactionRentalEndDate">
                     </div>
                     <div class="form-group">
+                        <label>入库日期</label>
+                        <input type="date" id="transactionAdminReturnDate">
+                    </div>
+                </div>
+                
+                <!-- 其他信息分组 -->
+                <div style="border-top: 1px solid #ddd; margin: 15px 0; padding-top: 15px;">
+                    <h4 style="margin: 0 0 15px 0; color: #333;">其他信息</h4>
+                    <div class="form-group">
                         <label>租金 (¥)</label>
                         <input type="number" id="transactionRentalPrice" step="0.01" min="0">
                     </div>
                     <div class="form-group">
-                        <label>回库日期</label>
-                        <input type="date" id="transactionAdminReturnDate">
+                        <label>邮费 (¥)</label>
+                        <input type="number" id="transactionShippingCost" step="0.01" min="0">
                     </div>
                 </div>
+                
+                <!-- 备注信息 -->
                 <div class="form-group">
                     <label>备注</label>
                     <textarea id="transactionRemarks" style="min-height: 80px; resize: vertical;"></textarea>
