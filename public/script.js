@@ -1579,6 +1579,13 @@ function openEditTransactionModal(transactionId) {
         return;
     }
     
+    // 重置保存按钮状态
+    const saveBtn = modal.querySelector('.btn-primary');
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '保存';
+    }
+    
     // 存储交易ID用于保存
     modal.dataset.transactionId = transactionId;
     
@@ -1639,6 +1646,12 @@ async function loadTransactionData(transactionId) {
 function closeEditTransactionModal() {
     const modal = document.getElementById('editTransactionModal');
     if (modal) {
+        // 重置保存按钮状态
+        const saveBtn = modal.querySelector('.btn-primary');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '保存';
+        }
         modal.style.display = 'none';
     }
 }
@@ -1688,7 +1701,6 @@ async function deleteTransaction() {
  */
 async function saveTransactionChanges() {
     if (!adminToken) {
-        alert('请先登录');
         return;
     }
     
@@ -1718,12 +1730,13 @@ async function saveTransactionChanges() {
     const adminReturnDate = adminReturnDateInput?.value || null;
     
     if (!status || !transactionId) {
-        alert('请填写必填项（状态）');
         return;
     }
     
-    // 禁用保存按钮，防止重复提交
-    const saveBtn = Array.from(document.querySelectorAll('.modal-actions button')).find(btn => btn.textContent === '保存');
+    // 获取并禁用保存按钮，防止重复提交
+    const saveBtn = document.querySelector('.modal-actions .btn-primary');
+    const originalBtnText = saveBtn?.textContent || '保存';
+    
     if (saveBtn) {
         saveBtn.disabled = true;
         saveBtn.textContent = '保存中...';
@@ -1753,22 +1766,23 @@ async function saveTransactionChanges() {
         const data = await response.json();
         
         if (data.success) {
-            alert('保存成功！');
+            // 保存成功，关闭模态框并刷新列表
             closeEditTransactionModal();
-            loadAdminTransactions(); // 刷新列表
+            loadAdminTransactions();
         } else {
-            alert('保存失败: ' + (data.message || '未知错误'));
+            // 保存失败，恢复按钮状态并在console输出
+            console.error('Save failed:', data.message);
             if (saveBtn) {
                 saveBtn.disabled = false;
-                saveBtn.textContent = '保存';
+                saveBtn.textContent = originalBtnText;
             }
         }
     } catch (err) {
         console.error('Save transaction error:', err);
-        alert('保存时出错: ' + err.message);
+        // 错误时恢复按钮状态
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.textContent = '保存';
+            saveBtn.textContent = originalBtnText;
         }
     }
 }
