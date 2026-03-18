@@ -639,6 +639,68 @@ router.put('/transactions/:transactionId', async (req, res) => {
 });
 
 /**
+ * 删除交易
+ */
+router.delete('/transactions/:transactionId', async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+
+    // 首先获取交易信息以获取equipment_id
+    const { data: transaction, error: fetchError } = await supabase
+      .from('transactions')
+      .select('equipment_id')
+      .eq('id', transactionId)
+      .single();
+
+    if (fetchError || !transaction) {
+      return res.status(404).json({
+        success: false,
+        message: '交易不存在'
+      });
+    }
+
+    // 删除交易
+    const { error: deleteError } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', transactionId);
+
+    if (deleteError) throw deleteError;
+
+    // 删除交易后，更新设备库存状态
+    // 检查是否还有其他活跃交易
+    if (transaction.equipment_id) {
+      const { data: activeTransactions, error: activeError } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('equipment_id', transaction.equipment_id)
+        .in('status', ['confirmed', 'rented', 'shipped']);
+      
+      if (activeError) throw activeError;
+      
+      // 如果没有其他活跃交易，设备回库
+      const inStock = !activeTransactions || activeTransactions.length === 0;
+      
+      await supabase
+        .from('equipment')
+        .update({ in_stock: inStock })
+        .eq('id', transaction.equipment_id);
+    }
+
+    res.json({
+      success: true,
+      message: '交易已删除'
+    });
+  } catch (err) {
+    console.error('Delete transaction error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete transaction'
+    });
+  }
+});
+
+/**
  * 获取仪表板统计数据
  */
 router.get('/dashboard/stats', async (req, res) => {

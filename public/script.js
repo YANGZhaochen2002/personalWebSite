@@ -1576,6 +1576,46 @@ function closeEditTransactionModal() {
 }
 
 /**
+ * 删除交易
+ */
+async function deleteTransaction() {
+    if (!adminToken) {
+        alert('请先登录');
+        return;
+    }
+    
+    const modal = document.getElementById('editTransactionModal');
+    const transactionId = modal.dataset.transactionId;
+    
+    // 显示确认对话框
+    if (!confirm('确认要删除这个交易吗？此操作无法撤销。')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/transactions/${transactionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            closeEditTransactionModal();
+            loadAdminTransactions(); // 刷新列表
+            alert('交易已删除');
+        } else {
+            alert('删除失败: ' + data.message);
+        }
+    } catch (err) {
+        console.error('Delete transaction error:', err);
+        alert('删除交易时出错');
+    }
+}
+
+/**
  * 保存交易更改
  */
 async function saveTransactionChanges() {
