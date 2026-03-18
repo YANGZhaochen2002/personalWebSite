@@ -1688,6 +1688,7 @@ async function deleteTransaction() {
  */
 async function saveTransactionChanges() {
     if (!adminToken) {
+        alert('请先登录');
         return;
     }
     
@@ -1717,7 +1718,15 @@ async function saveTransactionChanges() {
     const adminReturnDate = adminReturnDateInput?.value || null;
     
     if (!status || !transactionId) {
+        alert('请填写必填项（状态）');
         return;
+    }
+    
+    // 禁用保存按钮，防止重复提交
+    const saveBtn = Array.from(document.querySelectorAll('.modal-actions button')).find(btn => btn.textContent === '保存');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '保存中...';
     }
     
     try {
@@ -1744,11 +1753,23 @@ async function saveTransactionChanges() {
         const data = await response.json();
         
         if (data.success) {
+            alert('保存成功！');
             closeEditTransactionModal();
             loadAdminTransactions(); // 刷新列表
+        } else {
+            alert('保存失败: ' + (data.message || '未知错误'));
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '保存';
+            }
         }
     } catch (err) {
         console.error('Save transaction error:', err);
+        alert('保存时出错: ' + err.message);
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '保存';
+        }
     }
 }
 
