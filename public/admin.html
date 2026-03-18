@@ -511,6 +511,7 @@
                     </select>
                     <button onclick="searchTransactions()">搜索</button>
                     <button onclick="document.getElementById('transactionSearchInput').value = ''; document.getElementById('responsiblePersonFilter').value = ''; loadAdminTransactions()" style="background: #ddd; color: #333;">清空</button>
+                    <button onclick="exportTransactionsToCSV()" style="background: #4CAF50; color: white;" title="导出当前交易为CSV文件">📥 下载CSV</button>
                 </div>
                 
                 <!-- 最近3天的订单 -->

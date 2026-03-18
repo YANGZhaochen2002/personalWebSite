@@ -1697,6 +1697,103 @@ async function deleteTransaction() {
 }
 
 /**
+ * 导出交易为CSV文件
+ */
+function exportTransactionsToCSV() {
+    // 收集两个表格中的所有数据
+    const upcomingTable = document.getElementById('upcomingTransactionsTable');
+    const otherTable = document.getElementById('otherTransactionsTable');
+    
+    if (!upcomingTable || !otherTable) {
+        alert('找不到交易数据');
+        return;
+    }
+    
+    const rows = [];
+    
+    // CSV头
+    const headers = ['交易码', '客户', '类型', '设备', '租期', '时间信息', '备注', '总价格', '邮费', '入库时间', '状态', '负责人'];
+    rows.push(headers.map(h => `"${h}"`).join(','));
+    
+    // 提取最近3天的订单数据
+    const upcomingRows = upcomingTable.querySelectorAll('tbody tr');
+    upcomingRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = [];
+        cells.forEach((cell, index) => {
+            // 跳过最后一列（操作按钮）
+            if (index < cells.length - 1) {
+                // 清理HTML标签，只保留文本
+                let text = cell.innerText.trim();
+                // 处理包含换行符的文本
+                text = text.replace(/\n/g, ' ').replace(/"/g, '""');
+                rowData.push(`"${text}"`);
+            }
+        });
+        // 补充入库时间列（对于upcoming表格为空）
+        rowData.splice(9, 0, '""');
+        if (rowData.length > 0) {
+            rows.push(rowData.join(','));
+        }
+    });
+    
+    // 提取其他交易数据
+    const otherRows = otherTable.querySelectorAll('tbody tr');
+    otherRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = [];
+        cells.forEach((cell, index) => {
+            // 跳过最后一列（操作按钮）
+            if (index < cells.length - 1) {
+                // 清理HTML标签，只保留文本
+                let text = cell.innerText.trim();
+                // 处理包含换行符的文本
+                text = text.replace(/\n/g, ' ').replace(/"/g, '""');
+                rowData.push(`"${text}"`);
+            }
+        });
+        if (rowData.length > 0) {
+            rows.push(rowData.join(','));
+        }
+    });
+    
+    if (rows.length <= 1) {
+        alert('没有交易数据可导出');
+        return;
+    }
+    
+    // 生成CSV内容
+    const csvContent = rows.join('\n');
+    
+    // 创建Blob对象
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // 创建下载链接
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    // 生成文件名（包含当前日期）
+    const now = new Date();
+    const dateStr = now.getFullYear() + 
+                   String(now.getMonth() + 1).padStart(2, '0') + 
+                   String(now.getDate()).padStart(2, '0') +
+                   String(now.getHours()).padStart(2, '0') +
+                   String(now.getMinutes()).padStart(2, '0');
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `transactions_${dateStr}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    
+    // 触发下载
+    link.click();
+    
+    // 清理
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+/**
  * 保存交易更改
  */
 async function saveTransactionChanges() {
