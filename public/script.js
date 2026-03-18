@@ -870,7 +870,7 @@ async function loadAvailableEquipment() {
 function displayAdminEquipmentTable(equipment) {
     const tbody = document.querySelector('#equipmentTable tbody');
     tbody.innerHTML = equipment.map(item => `
-        <tr>
+        <tr style="cursor: pointer;" onclick="viewEquipmentRentalCalendar(${item.id})">
             <td>${item.equipment_code}</td>
             <td>${item.brand}</td>
             <td>${item.category}</td>
@@ -878,7 +878,7 @@ function displayAdminEquipmentTable(equipment) {
             <td>¥${item.daily_rental_price.toFixed(2)}</td>
             <td>¥${item.damage_price.toFixed(2)}</td>
             <td>${item.in_stock ? '是' : '否'}</td>
-            <td>
+            <td onclick="event.stopPropagation();">
                 <button class="btn-edit" onclick="editEquipment(${item.id})">编辑</button>
                 <button class="btn-delete" onclick="deleteEquipment(${item.id})">删除</button>
             </td>
@@ -887,8 +887,267 @@ function displayAdminEquipmentTable(equipment) {
 }
 
 /**
- * 显示添加设备表单
+ * 搜索设备（按设备码或型号）
  */
+function searchEquipment() {
+    const searchInput = document.getElementById('equipmentSearchInput');
+    const searchQuery = searchInput?.value.toLowerCase().trim() || '';
+    
+    if (!searchQuery) {
+        loadAdminEquipment();
+        return;
+    }
+
+    // 从当前显示的表格中搜索，或者重新加载后搜索
+    const equipmentTable = document.querySelector('#equipmentTable tbody');
+    const rows = equipmentTable.querySelectorAll('tr');
+    
+    if (rows.length === 0) {
+        loadAdminEquipment();
+        return;
+    }
+
+    // 遍历行，隐藏不匹配的行
+    let visibleCount = 0;
+    rows.forEach(row => {
+        const equipCode = row.cells[0]?.textContent.toLowerCase() || '';
+        const model = row.cells[3]?.textContent.toLowerCase() || '';
+        
+        const matches = equipCode.includes(searchQuery) || model.includes(searchQuery);
+        row.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+    });
+
+    if (visibleCount === 0) {
+        // 如果没有匹配的行，显示"无搜索结果"消息
+        const tbody = document.querySelector('#equipmentTable tbody');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: #999;">无搜索结果</td></tr>';
+    }
+}
+
+/**
+ * 查看设备租期日历
+ */
+async function viewEquipmentRentalCalendar(equipmentId) {
+    try {
+        if (!adminToken) return;
+
+        // 获取设备信息
+        const equipResponse = await fetch(`${API_BASE}/admin/equipment`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        
+        const equipData = await equipResponse.json();
+        const equipment = equipData.data?.find(e => e.id === equipmentId);
+
+        if (!equipment) {
+            alert('设备不存在');
+            return;
+        }
+
+        // 获取该设备的所有未完成订单
+        const url = `${API_BASE}/admin/transactions?status=pending,confirmed,shipped,returned`;
+        const transResponse = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+
+        const transData = await transResponse.json();
+        const relevantTransactions = (transData.data || [])
+            .filter(trans => trans.equipment_id === equipmentId && trans.status !== 'completed' && trans.status !== 'cancelled');
+
+        // 更新模态框信息
+        document.getElementById('rentalEquipmentCode').textContent = equipment.equipment_code;
+        document.getElementById('rentalEquipmentModel').textContent = equipment.model;
+        document.getElementById('rentalEquipmentBrand').textContent = equipment.brand;
+
+        // 生成日历
+        generateEquipmentRentalCalendar(relevantTransactions);
+
+        // 显示订单列表
+        displayEquipmentOrders(relevantTransactions);
+
+        // 打开模态框
+        const modal = document.getElementById('equipmentRentalModal');
+        modal.classList.add('active');
+    } catch (err) {
+        console.error('View equipment rental calendar error:', err);
+        alert('加载设备租期日历出错');
+    }
+}
+
+/**
+ * 生成设备租期日历
+ */
+function generateEquipmentRentalCalendar(transactions) {
+    const container = document.getElementById('equipmentCalendar');
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // 生成当前月份和未来3个月的日历
+    const monthsToShow = 4;
+    let calendarHTML = '';
+
+    for (let monthOffset = 0; monthOffset < monthsToShow; monthOffset++) {
+        const displayDate = new Date(currentYear, currentMonth + monthOffset, 1);
+        const year = displayDate.getFullYear();
+        const month = displayDate.getMonth();
+        
+        calendarHTML += generateMonthCalendar(year, month, transactions);
+    }
+
+    container.innerHTML = calendarHTML;
+}
+
+/**
+ * 生成单月日历
+ */
+function generateMonthCalendar(year, month, transactions) {
+    const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+
+    let calendarHTML = `<div style="display: inline-block; margin-right: 20px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">`;
+    calendarHTML += `<h4 style="text-align: center; margin: 0 0 10px 0;">${year}年${monthNames[month]}</h4>`;
+    calendarHTML += `<table style="width: 100%; border-collapse: collapse; font-size: 12px;">`;
+    calendarHTML += `<tr style="background: #f0f0f0;">`;
+    
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+    weekDays.forEach(day => {
+        calendarHTML += `<th style="width: 30px; height: 25px; text-align: center; border: 1px solid #ddd; font-weight: 600;">${day}</th>`;
+    });
+    calendarHTML += `</tr>`;
+
+    // 填充日期
+    let dayCount = 1;
+    for (let i = 0; i < 6; i++) {
+        calendarHTML += `<tr>`;
+        for (let j = 0; j < 7; j++) {
+            if (i === 0 && j < startDate) {
+                calendarHTML += `<td style="height: 40px; border: 1px solid #eee;"></td>`;
+            } else if (dayCount > daysInMonth) {
+                calendarHTML += `<td style="height: 40px; border: 1px solid #eee;"></td>`;
+            } else {
+                const date = new Date(year, month, dayCount);
+                const dateStr = formatDate(date);
+                const dayTransactions = transactions.filter(trans => {
+                    const rentalStart = new Date(trans.rental_start_date);
+                    const rentalEnd = new Date(trans.rental_end_date);
+                    const pickupTime = trans.pickup_time ? new Date(trans.pickup_time) : null;
+                    const postingDate = trans.posting_date ? new Date(trans.posting_date) : null;
+
+                    // 检查日期是否在租期内，或是邮寄/自提日期
+                    const inRentalPeriod = date >= rentalStart && date <= rentalEnd;
+                    const isPickupDate = pickupTime && formatDate(pickupTime) === dateStr;
+                    const isPostingDate = postingDate && formatDate(postingDate) === dateStr;
+
+                    return inRentalPeriod || isPickupDate || isPostingDate;
+                });
+
+                let cellBgColor = '#ffffff';
+                let cellContent = `<div style="height: 40px; padding: 2px; overflow: hidden; font-size: 11px;">${dayCount}`;
+
+                if (dayTransactions.length > 0) {
+                    // 如果有多种类型的事件，使用混合颜色
+                    const hasPickup = dayTransactions.some(t => t.transaction_type === 'pickup' && t.pickup_time && formatDate(new Date(t.pickup_time)) === dateStr);
+                    const hasPosting = dayTransactions.some(t => t.transaction_type === 'shipping' && t.posting_date && formatDate(new Date(t.posting_date)) === dateStr);
+                    const inRental = dayTransactions.filter(t => {
+                        const rentalStart = new Date(t.rental_start_date);
+                        const rentalEnd = new Date(t.rental_end_date);
+                        return date >= rentalStart && date <= rentalEnd;
+                    }).length > 0;
+
+                    if (hasPickup) {
+                        cellBgColor = '#ff9800'; // 橙色 - 自提
+                    } else if (hasPosting) {
+                        cellBgColor = '#2196f3'; // 蓝色 - 邮寄
+                    } else if (inRental) {
+                        cellBgColor = '#e8f5e9'; // 浅绿色 - 租期中
+                    }
+
+                    // 添加提示
+                    const labels = [];
+                    if (hasPickup) labels.push('自提');
+                    if (hasPosting) labels.push('邮寄');
+                    if (labels.length > 0) {
+                        cellContent += `<br><span style="color: white; font-weight: bold;">${labels.join('/')}</span>`;
+                    }
+                }
+
+                cellContent += `</div>`;
+                calendarHTML += `<td style="height: 40px; border: 1px solid #ddd; background: ${cellBgColor}; padding: 0;">${cellContent}</td>`;
+                dayCount++;
+            }
+        }
+        calendarHTML += `</tr>`;
+        if (dayCount > daysInMonth) break;
+    }
+
+    calendarHTML += `</table></div>`;
+    return calendarHTML;
+}
+
+/**
+ * 显示设备订单列表
+ */
+function displayEquipmentOrders(transactions) {
+    const ordersList = document.getElementById('rentalOrdersList');
+    
+    if (transactions.length === 0) {
+        ordersList.innerHTML = '<p style="color: #999;">暂无未完成订单</p>';
+        return;
+    }
+
+    // 按开始日期排序
+    transactions.sort((a, b) => new Date(a.rental_start_date) - new Date(b.rental_start_date));
+
+    const ordersHTML = transactions.map(trans => {
+        const typeLabel = trans.transaction_type === 'pickup' ? '自提' : '邮寄';
+        let timeInfo = '';
+
+        if (trans.transaction_type === 'pickup') {
+            timeInfo = `<p><strong>自提时间:</strong> ${trans.pickup_time || '-'}</p>`;
+        } else {
+            const postingDate = trans.posting_date ? trans.posting_date : trans.rental_start_date;
+            timeInfo = `<p><strong>邮寄时间:</strong> ${trans.posting_date || '未邮寄（将在' + trans.rental_start_date + '邮寄）'}</p>`;
+        }
+
+        return `
+            <div style="margin-bottom: 15px; padding: 12px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
+                <p><strong>交易码:</strong> ${trans.transaction_code}</p>
+                <p><strong>客户:</strong> ${trans.customers?.name || '-'}</p>
+                <p><strong>类型:</strong> <span style="background: ${trans.transaction_type === 'pickup' ? '#ff9800' : '#2196f3'}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px;">${typeLabel}</span></p>
+                <p><strong>租期:</strong> ${trans.rental_start_date} 至 ${trans.rental_end_date}</p>
+                ${timeInfo}
+                <p><strong>状态:</strong> <span class="status-badge status-${trans.status}">${trans.status}</span></p>
+            </div>
+        `;
+    }).join('');
+
+    ordersList.innerHTML = ordersHTML;
+}
+
+/**
+ * 格式化日期为YYYY-MM-DD
+ */
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * 关闭设备租期日历模态框
+ */
+function closeEquipmentRentalModal() {
+    const modal = document.getElementById('equipmentRentalModal');
+    modal.classList.remove('active');
+}
+
+/**
 function showAddEquipmentForm() {
     document.getElementById('addEquipmentForm').style.display = 'block';
 }

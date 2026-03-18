@@ -313,6 +313,22 @@
         .badge.completed { background: #d1e7dd; color: #0f5132; }
         .badge.cancelled { background: #f8d7da; color: #842029; }
 
+        /* 状态徽章样式 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.status-pending { background: #fff3cd; color: #856404; }
+        .status-badge.status-confirmed { background: #cfe2ff; color: #084298; }
+        .status-badge.status-shipped { background: #d1e7dd; color: #0f5132; }
+        .status-badge.status-returned { background: #d1e7dd; color: #0f5132; }
+        .status-badge.status-completed { background: #c8e6c9; color: #2e7d32; }
+        .status-badge.status-cancelled { background: #f8d7da; color: #842029; }
+
         /* 交易表格特殊样式 */
         #upcomingTransactionsTable thead th,
         #otherTransactionsTable thead th {
@@ -418,6 +434,12 @@
                 <button class="btn-small" onclick="showAddEquipmentForm()" style="padding: 10px 15px; background: #2196F3; color: white; font-weight: 600; margin-bottom: 15px;">+ 添加设备</button>
                 
                 <div class="search-section">
+                    <input type="text" id="equipmentSearchInput" placeholder="按设备码或型号搜索..." style="flex: 1;">
+                    <button onclick="searchEquipment()">搜索</button>
+                    <button onclick="document.getElementById('equipmentSearchInput').value = ''; loadAdminEquipment()" style="background: #ddd; color: #333;">清空</button>
+                </div>
+
+                <div class="search-section" style="margin-top: 10px;">
                     <label style="font-weight: 600; white-space: nowrap;">可用日期范围:</label>
                     <input type="date" id="equipmentFilterStartDate">
                     <input type="date" id="equipmentFilterEndDate">
@@ -693,6 +715,28 @@
             <div class="modal-actions">
                 <button type="button" class="btn-primary" onclick="showEditCustomerModal()">编辑</button>
                 <button type="button" class="btn-secondary" onclick="closeCustomerDetailsModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设备租期日历模态框 -->
+    <div id="equipmentRentalModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h2 id="equipmentRentalTitle">设备租期日历</h2>
+            <div id="equipmentRentalInfo" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 4px;">
+                <p><strong>设备码:</strong> <span id="rentalEquipmentCode">-</span></p>
+                <p><strong>设备型号:</strong> <span id="rentalEquipmentModel">-</span></p>
+                <p><strong>品牌:</strong> <span id="rentalEquipmentBrand">-</span></p>
+            </div>
+            <div id="equipmentCalendarContainer" style="margin: 20px 0; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                <div id="equipmentCalendar"></div>
+            </div>
+            <div id="equipmentRentalList" style="margin: 20px 0;">
+                <h4>订单信息</h4>
+                <div id="rentalOrdersList"></div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeEquipmentRentalModal()">关闭</button>
             </div>
         </div>
     </div>
