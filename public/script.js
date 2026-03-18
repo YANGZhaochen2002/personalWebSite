@@ -754,6 +754,18 @@ async function loadAdminData() {
     }
 
     // 表格数据由switchAdminTab在切换时加载
+    
+    // 为负责人选择框添加事件监听
+    const responsiblePersonFilter = document.getElementById('responsiblePersonFilter');
+    if (responsiblePersonFilter) {
+        responsiblePersonFilter.addEventListener('change', searchTransactions);
+    }
+    
+    // 为已完成订单负责人选择框添加事件监听
+    const completedResponsiblePersonFilter = document.getElementById('completedResponsiblePersonFilter');
+    if (completedResponsiblePersonFilter) {
+        completedResponsiblePersonFilter.addEventListener('change', searchCompletedTransactions);
+    }
 }
 
 /**
@@ -774,7 +786,8 @@ function switchAdminTab(tab) {
         btn => btn.textContent.includes(
             tab === 'equipment' ? '设备' : 
             tab === 'customers' ? '客户' : 
-            '交易'
+            tab === 'transactions' ? '交易管理' :
+            '已完成'
         )
     );
     if (tabBtn) {
@@ -790,6 +803,9 @@ function switchAdminTab(tab) {
     }
     else if (tab === 'transactions') {
         loadAdminTransactions();
+    }
+    else if (tab === 'completedTransactions') {
+        loadCompletedTransactions();
     }
 }
 
@@ -1004,7 +1020,7 @@ async function loadAdminCustomers() {
 /**
  * 加载交易（管理员）
  */
-async function loadAdminTransactions(searchQuery = '') {
+async function loadAdminTransactions(searchQuery = '', responsiblePerson = '') {
     try {
         if (!adminToken) return;
         
@@ -1014,6 +1030,9 @@ async function loadAdminTransactions(searchQuery = '') {
         let url = `${API_BASE}/admin/transactions?sortBy=${sortBy}`;
         if (searchQuery) {
             url += `&search=${encodeURIComponent(searchQuery)}`;
+        }
+        if (responsiblePerson) {
+            url += `&responsiblePerson=${encodeURIComponent(responsiblePerson)}`;
         }
         
         const response = await fetch(url, {
@@ -1135,7 +1154,97 @@ async function loadAdminTransactions(searchQuery = '') {
 function searchTransactions() {
     const searchInput = document.getElementById('transactionSearchInput');
     const searchQuery = searchInput.value.trim();
-    loadAdminTransactions(searchQuery);
+    const responsiblePersonFilter = document.getElementById('responsiblePersonFilter');
+    const responsiblePerson = responsiblePersonFilter?.value || '';
+    loadAdminTransactions(searchQuery, responsiblePerson);
+}
+
+/**
+ * 加载已完成的交易
+ */
+async function loadCompletedTransactions(searchQuery = '', responsiblePerson = '') {
+    try {
+        if (!adminToken) return;
+        
+        let url = `${API_BASE}/admin/transactions?status=completed`;
+        if (searchQuery) {
+            url += `&search=${encodeURIComponent(searchQuery)}`;
+        }
+        if (responsiblePerson) {
+            url += `&responsiblePerson=${encodeURIComponent(responsiblePerson)}`;
+        }
+        
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+            // 生成表格行的辅助函数
+            const generateTableRow = (trans) => {
+                const cleanedRemarks = (trans.remarks || '').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+                const isPickup = trans.transaction_type === 'pickup';
+                const bgColor = isPickup ? '#fff3e0' : '#e3f2fd';
+                const typeLabel = isPickup ? '自提' : '邮寄';
+                const typeColor = isPickup ? '#ff6f00' : '#1976d2';
+                
+                let additionalInfo = '';
+                if (isPickup) {
+                    additionalInfo = `自提: ${trans.pickup_time || '-'}`;
+                } else {
+                    additionalInfo = `邮寄: ${trans.posting_date || '-'} ${trans.posting_time || ''}`;
+                }
+                
+                return `
+                    <tr style="background-color: ${bgColor};">
+                        <td><strong>${trans.transaction_code}</strong></td>
+                        <td><a href="javascript:viewCustomerDetailsModal(${trans.customers?.id || 'null'})" style="color: #007bff; cursor: pointer; text-decoration: none; font-weight: 600;">${trans.customers?.name || '-'}</a></td>
+                        <td>
+                            <span style="background-color: ${typeColor}; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">${typeLabel}</span>
+                        </td>
+                        <td>${trans.equipment?.equipment_code || '-'}</td>
+                        <td>${trans.rental_start_date} 至 ${trans.rental_end_date}</td>
+                        <td style="font-size: 12px; color: #666;">${additionalInfo}</td>
+                        <td style="max-width: 150px; word-break: break-word;" title="${trans.remarks || ''}">${parseRemarkHighlights(trans.remarks) || '-'}</td>
+                        <td>¥${parseFloat(trans.total_price).toFixed(2)}</td>
+                        <td>¥${parseFloat(trans.shipping_cost || 0).toFixed(2)}</td>
+                        <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
+                        <td>${trans.responsible_person || '-'}</td>
+                        <td>
+                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}', '${trans.posting_date || ''}', '${trans.posting_time || ''}', '${cleanedRemarks}', ${trans.shipping_cost || 0})">编辑</button>
+                        </td>
+                    </tr>
+                `;
+            };
+            
+            // 填充已完成交易表格
+            const completedTbody = document.querySelector('#completedTransactionsTable tbody');
+            if (data.data.length === 0) {
+                completedTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color: #999;">暂无已完成订单</td></tr>';
+            } else {
+                completedTbody.innerHTML = data.data.map(generateTableRow).join('');
+            }
+        } else {
+            const completedTbody = document.querySelector('#completedTransactionsTable tbody');
+            completedTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color: red;">加载失败</td></tr>';
+        }
+    } catch (err) {
+        console.error('Load completed transactions error:', err);
+        const completedTbody = document.querySelector('#completedTransactionsTable tbody');
+        completedTbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color: red;">加载出错</td></tr>';
+    }
+}
+
+/**
+ * 搜索已完成的交易
+ */
+function searchCompletedTransactions() {
+    const searchInput = document.getElementById('completedSearchInput');
+    const searchQuery = searchInput.value.trim();
+    const responsiblePersonFilter = document.getElementById('completedResponsiblePersonFilter');
+    const responsiblePerson = responsiblePersonFilter?.value || '';
+    loadCompletedTransactions(searchQuery, responsiblePerson);
 }
 
 /**

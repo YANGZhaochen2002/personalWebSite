@@ -409,6 +409,7 @@
                 <button class="tab-btn active" onclick="switchAdminTab('equipment')">设备管理</button>
                 <button class="tab-btn" onclick="switchAdminTab('customers')">客户管理</button>
                 <button class="tab-btn" onclick="switchAdminTab('transactions')">交易管理</button>
+                <button class="tab-btn" onclick="switchAdminTab('completedTransactions')">已完成订单</button>
             </div>
 
             <!-- 设备管理标签页 -->
@@ -467,8 +468,19 @@
                 <h3>交易管理</h3>
                 <div class="search-section">
                     <input type="text" id="transactionSearchInput" placeholder="按客户名或交易码搜索..." style="flex: 1;">
-                    <button onclick="if(event.key === 'Enter') searchTransactions()">搜索</button>
-                    <button onclick="document.getElementById('transactionSearchInput').value = ''; loadAdminTransactions()" style="background: #ddd; color: #333;">清空</button>
+                    <select id="responsiblePersonFilter" style="min-width: 150px;">
+                        <option value="">全部负责人</option>
+                        <option value="修狗大号">修狗大号</option>
+                        <option value="租机小铺">租机小铺</option>
+                        <option value="休斯">休斯</option>
+                        <option value="小吐司">小吐司</option>
+                        <option value="博世">博世</option>
+                        <option value="嗨哥">嗨哥</option>
+                        <option value="小黄鸭">小黄鸭</option>
+                        <option value="温顿">温顿</option>
+                    </select>
+                    <button onclick="searchTransactions()">搜索</button>
+                    <button onclick="document.getElementById('transactionSearchInput').value = ''; document.getElementById('responsiblePersonFilter').value = ''; loadAdminTransactions()" style="background: #ddd; color: #333;">清空</button>
                 </div>
                 
                 <!-- 最近3天的订单 -->
@@ -503,6 +515,49 @@
                 </div>
                 <div class="table-container">
                     <table id="otherTransactionsTable">
+                        <thead>
+                            <tr>
+                                <th>交易码</th>
+                                <th>客户</th>
+                                <th>类型</th>
+                                <th>设备</th>
+                                <th>租期</th>
+                                <th>时间信息</th>
+                                <th>备注</th>
+                                <th>总价格</th>
+                                <th>邮费</th>
+                                <th>状态</th>
+                                <th>负责人</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 已完成订单标签页 -->
+            <div id="completedTransactionsTab" class="admin-tab-content">
+                <h3>已完成订单</h3>
+                <div class="search-section">
+                    <input type="text" id="completedSearchInput" placeholder="按客户名或交易码搜索..." style="flex: 1;">
+                    <select id="completedResponsiblePersonFilter" style="min-width: 150px;">
+                        <option value="">全部负责人</option>
+                        <option value="修狗大号">修狗大号</option>
+                        <option value="租机小铺">租机小铺</option>
+                        <option value="休斯">休斯</option>
+                        <option value="小吐司">小吐司</option>
+                        <option value="博世">博世</option>
+                        <option value="嗨哥">嗨哥</option>
+                        <option value="小黄鸭">小黄鸭</option>
+                        <option value="温顿">温顿</option>
+                    </select>
+                    <button onclick="searchCompletedTransactions()">搜索</button>
+                    <button onclick="document.getElementById('completedSearchInput').value = ''; document.getElementById('completedResponsiblePersonFilter').value = ''; loadCompletedTransactions()" style="background: #ddd; color: #333;">清空</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="completedTransactionsTable">
                         <thead>
                             <tr>
                                 <th>交易码</th>

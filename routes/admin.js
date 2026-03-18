@@ -351,7 +351,7 @@ router.delete('/equipment/:equipmentId', async (req, res) => {
  */
 router.get('/transactions', async (req, res) => {
   try {
-    const { status, search, sortBy, startDate, endDate, customerId } = req.query;
+    const { status, search, sortBy, startDate, endDate, customerId, responsiblePerson } = req.query;
 
     let query = supabase
       .from('transactions')
@@ -391,6 +391,11 @@ router.get('/transactions', async (req, res) => {
             transaction.customers?.name?.toLowerCase().includes(searchLower)
           );
         });
+      }
+
+      // 按负责人过滤
+      if (responsiblePerson) {
+        data = data.filter(transaction => transaction.responsible_person === responsiblePerson);
       }
 
       // 按邮寄时间和自提时间混合排序
@@ -447,6 +452,11 @@ router.get('/transactions', async (req, res) => {
             transaction.customers?.name?.toLowerCase().includes(searchLower)
           );
         });
+      }
+
+      // 按负责人过滤
+      if (responsiblePerson) {
+        data = data.filter(transaction => transaction.responsible_person === responsiblePerson);
       }
 
       res.json({
