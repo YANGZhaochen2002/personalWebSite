@@ -513,10 +513,50 @@ router.get('/transactions/:transactionId', async (req, res) => {
 /**
  * 更新交易状态、负责人、邮寄信息等
  */
+/**
+ * 获取单个交易详情
+ */
+router.get('/transactions/:transactionId', async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+
+    const { data: transaction, error } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        customers (*),
+        equipment (*)
+      `)
+      .eq('id', transactionId)
+      .single();
+
+    if (error || !transaction) {
+      return res.status(404).json({
+        success: false,
+        message: '交易不存在'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: transaction
+    });
+  } catch (err) {
+    console.error('Get transaction error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get transaction'
+    });
+  }
+});
+
+/**
+ * 更新交易
+ */
 router.put('/transactions/:transactionId', async (req, res) => {
   try {
     const { transactionId } = req.params;
-    const { status, responsiblePerson, postingDate, postingTime, remarks, shippingCost } = req.body;
+    const { status, responsiblePerson, postingDate, postingTime, remarks, shippingCost, rentalStartDate, rentalEndDate, rentalPrice, returnDate } = req.body;
 
     // 首先获取交易信息以获取equipment_id、旧状态和rental_end_date
     const { data: transaction, error: fetchError } = await supabase
@@ -607,6 +647,10 @@ router.put('/transactions/:transactionId', async (req, res) => {
     if (postingTime !== undefined) updateData.posting_time = postingTime;
     if (remarks !== undefined) updateData.remarks = remarks;
     if (shippingCost !== undefined) updateData.shipping_cost = shippingCost;
+    if (rentalStartDate !== undefined) updateData.rental_start_date = rentalStartDate;
+    if (rentalEndDate !== undefined) updateData.rental_end_date = rentalEndDate;
+    if (rentalPrice !== undefined) updateData.rental_price = rentalPrice;
+    if (returnDate !== undefined) updateData.return_date = returnDate;
 
     // 更新交易
     const { data, error } = await supabase

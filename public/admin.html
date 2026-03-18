@@ -690,6 +690,25 @@
                     <label>邮费 (¥)</label>
                     <input type="number" id="transactionShippingCost" step="0.01" min="0">
                 </div>
+                <div style="border-top: 1px solid #ddd; margin: 15px 0; padding-top: 15px;">
+                    <h4 style="margin: 0 0 15px 0; color: #333;">租期信息</h4>
+                    <div class="form-group">
+                        <label>租期开始日期</label>
+                        <input type="date" id="transactionRentalStartDate">
+                    </div>
+                    <div class="form-group">
+                        <label>租期结束日期</label>
+                        <input type="date" id="transactionRentalEndDate">
+                    </div>
+                    <div class="form-group">
+                        <label>租金 (¥)</label>
+                        <input type="number" id="transactionRentalPrice" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>回库日期</label>
+                        <input type="date" id="transactionReturnDate">
+                    </div>
+                </div>
                 <div class="form-group">
                     <label>备注</label>
                     <textarea id="transactionRemarks" style="min-height: 80px; resize: vertical;"></textarea>

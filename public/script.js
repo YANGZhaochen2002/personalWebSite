@@ -1043,20 +1043,21 @@ function generateMonthCalendar(year, month, transactions) {
             } else if (dayCount > daysInMonth) {
                 calendarHTML += `<td style="height: 40px; border: 1px solid #eee;"></td>`;
             } else {
-                const date = new Date(year, month, dayCount);
                 const dateStr = formatDate(date);
                 const dayTransactions = transactions.filter(trans => {
                     const rentalStart = new Date(trans.rental_start_date);
                     const rentalEnd = new Date(trans.rental_end_date);
                     const pickupTime = trans.pickup_time ? new Date(trans.pickup_time) : null;
                     const postingDate = trans.posting_date ? new Date(trans.posting_date) : null;
+                    const returnDate = trans.return_date ? new Date(trans.return_date) : null;
 
-                    // 检查日期是否在租期内，或是邮寄/自提日期
+                    // 检查日期是否在租期内，或是邮寄/自提/回库日期
                     const inRentalPeriod = date >= rentalStart && date <= rentalEnd;
                     const isPickupDate = pickupTime && formatDate(pickupTime) === dateStr;
                     const isPostingDate = postingDate && formatDate(postingDate) === dateStr;
+                    const isReturnDate = returnDate && formatDate(returnDate) === dateStr;
 
-                    return inRentalPeriod || isPickupDate || isPostingDate;
+                    return inRentalPeriod || isPickupDate || isPostingDate || isReturnDate;
                 });
 
                 let cellBgColor = '#ffffff';
@@ -1066,6 +1067,7 @@ function generateMonthCalendar(year, month, transactions) {
                     // 如果有多种类型的事件，使用混合颜色
                     const hasPickup = dayTransactions.some(t => t.transaction_type === 'pickup' && t.pickup_time && formatDate(new Date(t.pickup_time)) === dateStr);
                     const hasPosting = dayTransactions.some(t => t.transaction_type === 'shipping' && t.posting_date && formatDate(new Date(t.posting_date)) === dateStr);
+                    const hasReturnDate = dayTransactions.some(t => t.return_date && formatDate(new Date(t.return_date)) === dateStr);
                     const inRental = dayTransactions.filter(t => {
                         const rentalStart = new Date(t.rental_start_date);
                         const rentalEnd = new Date(t.rental_end_date);
@@ -1076,6 +1078,8 @@ function generateMonthCalendar(year, month, transactions) {
                         cellBgColor = '#ff9800'; // 橙色 - 自提
                     } else if (hasPosting) {
                         cellBgColor = '#2196f3'; // 蓝色 - 邮寄
+                    } else if (hasReturnDate) {
+                        cellBgColor = '#ff5722'; // 深红色 - 回库
                     } else if (inRental) {
                         cellBgColor = '#e8f5e9'; // 浅绿色 - 租期中
                     }
@@ -1084,8 +1088,9 @@ function generateMonthCalendar(year, month, transactions) {
                     const labels = [];
                     if (hasPickup) labels.push('自提');
                     if (hasPosting) labels.push('邮寄');
+                    if (hasReturnDate) labels.push('回库');
                     if (labels.length > 0) {
-                        cellContent += `<br><span style="color: white; font-weight: bold;">${labels.join('/')}</span>`;
+                        cellContent += `<br><span style="color: white; font-weight: bold; font-size: 10px;">${labels.join('/')}</span>`;
                     }
                 }
 
@@ -1127,6 +1132,11 @@ function displayEquipmentOrders(transactions) {
             timeInfo = `<p><strong>邮寄时间:</strong> ${trans.posting_date || '未邮寄（将在' + trans.rental_start_date + '邮寄）'}</p>`;
         }
 
+        let returnDateInfo = '';
+        if (trans.return_date) {
+            returnDateInfo = `<p><strong>回库日期:</strong> ${trans.return_date}</p>`;
+        }
+
         return `
             <div style="margin-bottom: 15px; padding: 12px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
                 <p><strong>交易码:</strong> ${trans.transaction_code}</p>
@@ -1134,6 +1144,7 @@ function displayEquipmentOrders(transactions) {
                 <p><strong>类型:</strong> <span style="background: ${trans.transaction_type === 'pickup' ? '#ff9800' : '#2196f3'}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px;">${typeLabel}</span></p>
                 <p><strong>租期:</strong> ${trans.rental_start_date} 至 ${trans.rental_end_date}</p>
                 ${timeInfo}
+                ${returnDateInfo}
                 <p><strong>状态:</strong> <span class="status-badge status-${trans.status}">${trans.status}</span></p>
             </div>
         `;
@@ -1387,7 +1398,7 @@ async function loadAdminTransactions(searchQuery = '', responsiblePerson = '') {
                         <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
                         <td>${trans.responsible_person || '-'}</td>
                         <td>
-                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}', '${trans.posting_date || ''}', '${trans.posting_time || ''}', '${cleanedRemarks}', ${trans.shipping_cost || 0})">编辑</button>
+                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id})">编辑</button>
                         </td>
                     </tr>
                 `;
@@ -1487,7 +1498,7 @@ async function loadCompletedTransactions(searchQuery = '', responsiblePerson = '
                         <td><span class="status-badge status-${trans.status}">${trans.status}</span></td>
                         <td>${trans.responsible_person || '-'}</td>
                         <td>
-                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id}, '${trans.status}', '${trans.responsible_person || ''}', '${trans.posting_date || ''}', '${trans.posting_time || ''}', '${cleanedRemarks}', ${trans.shipping_cost || 0})">编辑</button>
+                            <button class="btn-edit" onclick="openEditTransactionModal(${trans.id})">编辑</button>
                         </td>
                     </tr>
                 `;
@@ -1525,7 +1536,7 @@ function searchCompletedTransactions() {
 /**
  * 打开编辑交易模态框
  */
-function openEditTransactionModal(transactionId, currentStatus, currentResponsible, currentPostingDate, currentPostingTime, currentRemarks, currentShippingCost) {
+function openEditTransactionModal(transactionId) {
     const modal = document.getElementById('editTransactionModal');
     if (!modal) {
         console.error('Transaction edit modal not found');
@@ -1535,34 +1546,55 @@ function openEditTransactionModal(transactionId, currentStatus, currentResponsib
     // 存储交易ID用于保存
     modal.dataset.transactionId = transactionId;
     
-    // 设置当前值
-    const statusSelect = document.getElementById('transactionStatus');
-    const responsibleInput = document.getElementById('transactionResponsible');
-    const postingDateInput = document.getElementById('transactionPostingDate');
-    const postingTimeInput = document.getElementById('transactionPostingTime');
-    const remarksInput = document.getElementById('transactionRemarks');
-    const shippingCostInput = document.getElementById('transactionShippingCost');
-    
-    if (statusSelect) {
-        statusSelect.value = currentStatus || 'pending';
-    }
-    if (responsibleInput) {
-        responsibleInput.value = currentResponsible || '';
-    }
-    if (postingDateInput) {
-        postingDateInput.value = currentPostingDate || '';
-    }
-    if (postingTimeInput) {
-        postingTimeInput.value = currentPostingTime || '';
-    }
-    if (remarksInput) {
-        remarksInput.value = currentRemarks || '';
-    }
-    if (shippingCostInput) {
-        shippingCostInput.value = currentShippingCost || 0;
-    }
+    // 从API加载完整的交易数据
+    loadTransactionData(transactionId);
     
     modal.style.display = 'flex';
+}
+
+/**
+ * 从API加载交易数据并填充编辑表单
+ */
+async function loadTransactionData(transactionId) {
+    try {
+        const response = await fetch(`${API_BASE}/admin/transactions/${transactionId}`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+            const transaction = data.data;
+            
+            // 设置所有表单字段
+            const statusSelect = document.getElementById('transactionStatus');
+            const responsibleInput = document.getElementById('transactionResponsible');
+            const postingDateInput = document.getElementById('transactionPostingDate');
+            const postingTimeInput = document.getElementById('transactionPostingTime');
+            const remarksInput = document.getElementById('transactionRemarks');
+            const shippingCostInput = document.getElementById('transactionShippingCost');
+            const rentalStartDateInput = document.getElementById('transactionRentalStartDate');
+            const rentalEndDateInput = document.getElementById('transactionRentalEndDate');
+            const rentalPriceInput = document.getElementById('transactionRentalPrice');
+            const returnDateInput = document.getElementById('transactionReturnDate');
+            
+            if (statusSelect) statusSelect.value = transaction.status || 'pending';
+            if (responsibleInput) responsibleInput.value = transaction.responsible_person || '';
+            if (postingDateInput) postingDateInput.value = transaction.posting_date || '';
+            if (postingTimeInput) postingTimeInput.value = transaction.posting_time || '';
+            if (remarksInput) remarksInput.value = transaction.remarks || '';
+            if (shippingCostInput) shippingCostInput.value = transaction.shipping_cost || 0;
+            if (rentalStartDateInput) rentalStartDateInput.value = transaction.rental_start_date || '';
+            if (rentalEndDateInput) rentalEndDateInput.value = transaction.rental_end_date || '';
+            if (rentalPriceInput) rentalPriceInput.value = transaction.rental_price || transaction.total_price || 0;
+            if (returnDateInput) returnDateInput.value = transaction.return_date || '';
+        } else {
+            alert('加载交易数据失败');
+        }
+    } catch (err) {
+        console.error('Load transaction data error:', err);
+        alert('加载交易数据出错');
+    }
 }
 
 /**
@@ -1625,12 +1657,17 @@ async function saveTransactionChanges() {
     
     const modal = document.getElementById('editTransactionModal');
     const transactionId = modal.dataset.transactionId;
+    
     const statusSelect = document.getElementById('transactionStatus');
     const responsibleInput = document.getElementById('transactionResponsible');
     const postingDateInput = document.getElementById('transactionPostingDate');
     const postingTimeInput = document.getElementById('transactionPostingTime');
     const remarksInput = document.getElementById('transactionRemarks');
     const shippingCostInput = document.getElementById('transactionShippingCost');
+    const rentalStartDateInput = document.getElementById('transactionRentalStartDate');
+    const rentalEndDateInput = document.getElementById('transactionRentalEndDate');
+    const rentalPriceInput = document.getElementById('transactionRentalPrice');
+    const returnDateInput = document.getElementById('transactionReturnDate');
     
     const status = statusSelect?.value;
     const responsiblePerson = responsibleInput?.value || null;
@@ -1638,6 +1675,10 @@ async function saveTransactionChanges() {
     const postingTime = postingTimeInput?.value || null;
     const remarks = remarksInput?.value || null;
     const shippingCost = shippingCostInput?.value ? parseFloat(shippingCostInput.value) : 0;
+    const rentalStartDate = rentalStartDateInput?.value || null;
+    const rentalEndDate = rentalEndDateInput?.value || null;
+    const rentalPrice = rentalPriceInput?.value ? parseFloat(rentalPriceInput.value) : 0;
+    const returnDate = returnDateInput?.value || null;
     
     if (!status || !transactionId) {
         return;
@@ -1656,7 +1697,11 @@ async function saveTransactionChanges() {
                 postingDate,
                 postingTime,
                 remarks,
-                shippingCost
+                shippingCost,
+                rentalStartDate,
+                rentalEndDate,
+                rentalPrice,
+                returnDate
             })
         });
         
