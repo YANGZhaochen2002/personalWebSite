@@ -681,46 +681,49 @@
                     </select>
                 </div>
                 
-                <!-- 时间信息分组 -->
-                <div style="border-top: 1px solid #ddd; margin: 15px 0; padding-top: 15px;">
-                    <h4 style="margin: 0 0 15px 0; color: #333;">时间信息</h4>
-                    <div class="form-group">
-                        <label>邮寄日期</label>
-                        <input type="date" id="transactionPostingDate">
+                <!-- 两列布局容器 -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                    <!-- 左列：时间信息 -->
+                    <div style="border-right: 1px solid #ddd; padding-right: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: #333; font-size: 14px;">时间信息</h4>
+                        <div class="form-group">
+                            <label>邮寄日期</label>
+                            <input type="date" id="transactionPostingDate">
+                        </div>
+                        <div class="form-group">
+                            <label>邮寄时间</label>
+                            <input type="time" id="transactionPostingTime">
+                        </div>
+                        <div class="form-group">
+                            <label>租期开始日期</label>
+                            <input type="date" id="transactionRentalStartDate">
+                        </div>
+                        <div class="form-group">
+                            <label>租期结束日期</label>
+                            <input type="date" id="transactionRentalEndDate">
+                        </div>
+                        <div class="form-group">
+                            <label>入库日期</label>
+                            <input type="date" id="transactionAdminReturnDate">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>邮寄时间</label>
-                        <input type="time" id="transactionPostingTime">
-                    </div>
-                    <div class="form-group">
-                        <label>租期开始日期</label>
-                        <input type="date" id="transactionRentalStartDate">
-                    </div>
-                    <div class="form-group">
-                        <label>租期结束日期</label>
-                        <input type="date" id="transactionRentalEndDate">
-                    </div>
-                    <div class="form-group">
-                        <label>入库日期</label>
-                        <input type="date" id="transactionAdminReturnDate">
-                    </div>
-                </div>
-                
-                <!-- 其他信息分组 -->
-                <div style="border-top: 1px solid #ddd; margin: 15px 0; padding-top: 15px;">
-                    <h4 style="margin: 0 0 15px 0; color: #333;">其他信息</h4>
-                    <div class="form-group">
-                        <label>租金 (¥)</label>
-                        <input type="number" id="transactionRentalPrice" step="0.01" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>邮费 (¥)</label>
-                        <input type="number" id="transactionShippingCost" step="0.01" min="0">
+                    
+                    <!-- 右列：其他信息 -->
+                    <div style="padding-left: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: #333; font-size: 14px;">其他信息</h4>
+                        <div class="form-group">
+                            <label>租金 (¥)</label>
+                            <input type="number" id="transactionRentalPrice" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>邮费 (¥)</label>
+                            <input type="number" id="transactionShippingCost" step="0.01" min="0">
+                        </div>
                     </div>
                 </div>
                 
                 <!-- 备注信息 -->
-                <div class="form-group">
+                <div class="form-group" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 15px;">
                     <label>备注</label>
                     <textarea id="transactionRemarks" style="min-height: 80px; resize: vertical;"></textarea>
                     <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
